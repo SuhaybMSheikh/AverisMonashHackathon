@@ -38,7 +38,7 @@ Use the exact Python and Node versions above. `uv.lock`, `requirements.txt`, `.n
 
 If GNU Make is available, use `make backend`, `make frontend`, `make pipeline`, `make reset`, `make inspect`, or `make test`. The direct commands above are the Windows-native equivalents.
 
-## Phases 1–3: data, dashboard, and attachment views
+## Phases 1–4: data, dashboard, attachment views, and canonical text
 
 The backend indexes only email metadata and attachment metadata in `backend/derived/sdoc.sqlite3`; attachment bytes remain in `data/attachments/`. The ingest step is idempotent:
 
@@ -56,6 +56,10 @@ The read API is available at `/api/health`, `/api/emails`, `/api/emails/{email_i
 
 Run the complete attachment-preview smoke test with `uv run --locked python scripts/verify_previews.py` (or `make previews`). It requests all 250 previews, checks the two known corrupt PDFs, and confirms scans expose a rendered page image.
 
+Phase 4 converts source attachments into deterministic canonical text under `backend/derived/text/` and writes sidecar metadata under `backend/derived/meta/`. Run it with `uv run --locked python scripts/convert_all.py` (or `make convert`). The summary is expected to report 192 text, 22 spreadsheet, 8 Word, and 20 text-layer PDF conversions as `ok`; six scans are explicitly flagged until both OCR readers are configured, and two corrupt PDFs are `failed` with `corrupt_pdf`.
+
+The formatted attachment view automatically uses canonical text after conversion. The scan vision reader is opt-in: set `GEMINI_ENABLED=true` and provide `GEMINI_API_KEY` only after approving the transmission of rendered scan pages to Gemini. A missing key never blocks the local pipeline.
+
 ## Dataset policy
 
 `data/` contains the participant bundle (`inbox/`, `attachments/`, and `sample_submission.json`). It is input-only: never edit, regenerate, or tune against it. Derived output belongs under `backend/derived/`, which is ignored by Git.
@@ -67,6 +71,8 @@ Never open, copy, commit, or tune against an organizer answer key (`ground_truth
 ```powershell
 uv run python scripts/verify_setup.py
 uv run python -m unittest discover -s backend/tests -v
+uv run --locked python scripts/convert_all.py
+uv run --locked python scripts/report_conversion_quality.py
 npm --prefix frontend run check
 ```
 

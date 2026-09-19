@@ -139,25 +139,30 @@ def _pdf_preview(source: Path, document: dict[str, Any], derived_dir: Path) -> d
     }
 
 
-def preview_document(source: Path, document: dict[str, Any], derived_dir: Path) -> dict[str, Any]:
+def preview_document(source: Path, document: dict[str, Any], derived_dir: Path, canonical: str | None = None) -> dict[str, Any]:
     """Build a JSON-safe preview; malformed source data is an expected outcome."""
     try:
         extension = document["ext"].lower()
         if extension == ".txt":
             content = source.read_text(encoding="utf-8")
-            return {
+            preview = {
                 **_base(document),
                 "fields": _label_rows(content),
                 "metadata": {"line_count": len(content.splitlines())},
                 "original": {"kind": "text", "text": content},
             }
-        if extension == ".xlsx":
-            return _xlsx_preview(source, document)
-        if extension == ".docx":
-            return _docx_preview(source, document)
-        if extension == ".pdf":
-            return _pdf_preview(source, document, derived_dir)
-        raise ValueError(f"Unsupported attachment format: {extension}")
+        elif extension == ".xlsx":
+            preview = _xlsx_preview(source, document)
+        elif extension == ".docx":
+            preview = _docx_preview(source, document)
+        elif extension == ".pdf":
+            preview = _pdf_preview(source, document, derived_dir)
+        else:
+            raise ValueError(f"Unsupported attachment format: {extension}")
+        if canonical is not None:
+            preview["fields"] = _label_rows(canonical)
+            preview["metadata"] = {**preview.get("metadata", {}), "formatted_source": "canonical_text"}
+        return preview
     except Exception as error:  # Files in the inbox are untrusted input.
         return _unreadable(document, error)
 

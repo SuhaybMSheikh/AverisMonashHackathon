@@ -451,54 +451,56 @@ These were observed by inspecting the participant bundle, not taken from any ans
 
 **`.txt` (copy)**
 
-- [ ] **[P0]** Read as UTF-8, normalize line endings, copy to `derived/text/`. Run the same validator as the other converters (has heading, has `Label: value` lines).
+- [x] **[P0]** Read as UTF-8, normalize line endings, copy to `derived/text/`. Run the same validator as the other converters (has heading, has `Label: value` lines).
 
 **`.xlsx` → txt**
 
-- [ ] **[P0]** Open with `openpyxl` (data-only). Use the active sheet; if the workbook has more than one sheet, convert the sheet matching the role, warn about the others.
-- [ ] **[P0]** Row 1 letterhead (company name, no label): write it as an **unlabelled line** just below the heading block. Skip empty rows.
-- [ ] **[P0]** For every row with a label in column A and a value in column B, write `Label: value`. If the value contains ` | `, the part before it is the name (label line), the part after it is the address (indented continuation line).
-- [ ] **[P0]** Preserve numeric cells as written (`341715` stays `341715`, no unit added).
-- [ ] **[P0]** Handle merged cells, formulas (`data_only`), and blank labels defensively (warn, do not crash).
+- [x] **[P0]** Open with `openpyxl` (data-only). Use the active sheet; if the workbook has more than one sheet, convert the sheet matching the role, warn about the others.
+- [x] **[P0]** Row 1 letterhead (company name, no label): write it as an **unlabelled line** just below the heading block. Skip empty rows.
+- [x] **[P0]** For every row with a label in column A and a value in column B, write `Label: value`. If the value contains ` | `, the part before it is the name (label line), the part after it is the address (indented continuation line).
+- [x] **[P0]** Preserve numeric cells as written (`341715` stays `341715`, no unit added).
+- [x] **[P0]** Handle merged cells, formulas (`data_only`), and blank labels defensively (warn, do not crash).
 
 **`.docx` → txt**
 
-- [ ] **[P0]** Walk the document body **in order** (paragraphs and tables interleaved), since the title, `B/L NO.` line and footer live in paragraphs outside the table.
-- [ ] **[P0]** Table row with two cells: label = cell 0 (verbatim, including the Chinese text in parentheses), value = cell 1; cell line breaks become the name line plus one indented continuation line joined with `; `.
-- [ ] **[P0]** Paragraphs that already look like `Label: value` (e.g. `B/L NO.(提单号): EGLV…`) are copied as lines. A footer such as `ORDER NO.: 3064138367   FREIGHT PREPAID` is kept verbatim on one line (both are out-of-scope fields, so an imperfect split is harmless).
-- [ ] **[P0]** Warn if there is no table or more than one table.
+- [x] **[P0]** Walk the document body **in order** (paragraphs and tables interleaved), since the title, `B/L NO.` line and footer live in paragraphs outside the table.
+- [x] **[P0]** Table row with two cells: label = cell 0 (verbatim, including the Chinese text in parentheses), value = cell 1; cell line breaks become the name line plus one indented continuation line joined with `; `.
+- [x] **[P0]** Paragraphs that already look like `Label: value` (e.g. `B/L NO.(提单号): EGLV…`) are copied as lines. A footer such as `ORDER NO.: 3064138367   FREIGHT PREPAID` is kept verbatim on one line (both are out-of-scope fields, so an imperfect split is harmless).
+- [x] **[P0]** Warn if there is no table or more than one table.
 
 **`.pdf` with a text layer → txt**
 
-- [ ] **[P0]** Extract with `pdftotext -layout`. Split each line at the first run of two or more spaces into label and value. Indented lines that follow belong to the previous value (address continuation).
-- [ ] **[P0]** Lines that carry two labels (e.g. `B/L NUMBER: X    BOOKING NO. Y`) are kept verbatim; only the seven compared fields need clean parsing.
-- [ ] **[P0]** Keep the per-container table lines as-is (they are display information). The parser uses the total lines (`No. of Containers`, `TOTAL Gross Wt (kgs)`).
-- [ ] **[P0]** Detect the PDF type first: fonts present and non-empty text → text layer; images only → scan; parse error or zero pages → corrupt.
+- [x] **[P0]** Extract with `pdftotext -layout`. Split each line at the first run of two or more spaces into label and value. Indented lines that follow belong to the previous value (address continuation).
+- [x] **[P0]** Lines that carry two labels (e.g. `B/L NUMBER: X    BOOKING NO. Y`) are kept verbatim; only the seven compared fields need clean parsing.
+- [x] **[P0]** Keep the per-container table lines as-is (they are display information). The parser uses the total lines (`No. of Containers`, `TOTAL Gross Wt (kgs)`).
+- [x] **[P0]** Detect the PDF type first: fonts present and non-empty text → text layer; images only → scan; parse error or zero pages → corrupt.
 
 **`.pdf` scans → txt**
 
-- [ ] **[P1]** Render pages at 150–200 dpi (already cached from Phase 3).
-- [ ] **[P1]** **Two independent readers:** Tesseract OCR and Gemini vision (prompt in Appendix F, output as JSON of the seven fields plus the raw lines). Convert each reader's result to canonical text.
-- [ ] **[P1]** Compare the two readings field by field. Agreement: accept and record `pdf_ocr_dual`. Disagreement on any of the seven fields: write the canonical text with the disagreeing fields marked in the sidecar (`uncertain_fields`) so Phase 7 escalates them.
-- [ ] **[P1]** Extra scrutiny for digits: container count and weight are re-checked whenever the two readers differ by even one character (6 vs 8, 0 vs O).
-- [ ] **[P0]** If neither reader produces a usable result, mark `failed` and let Phase 7 emit `NEEDS_REVIEW / unreadable`.
+- [x] **[P1]** Render pages at 150–200 dpi (already cached from Phase 3).
+- [x] **[P1]** **Two independent readers:** Tesseract OCR and Gemini vision (prompt in Appendix F, output as JSON of the seven fields plus the raw lines). Convert each reader's result to canonical text.
+- [x] **[P1]** Compare the two readings field by field. Agreement: accept and record `pdf_ocr_dual`. Disagreement on any of the seven fields: write the canonical text with the disagreeing fields marked in the sidecar (`uncertain_fields`) so Phase 7 escalates them.
+- [x] **[P1]** Extra scrutiny for digits: container count and weight are re-checked whenever the two readers differ by even one character (6 vs 8, 0 vs O).
+- [x] **[P0]** If neither reader produces a usable result, mark `failed` and let Phase 7 emit `NEEDS_REVIEW / unreadable`.
 
 **`.pdf` corrupt**
 
-- [ ] **[P0]** Try opening with two libraries (e.g. poppler and PyMuPDF). If both fail, `status = failed`, reason `corrupt_pdf`.
+- [x] **[P0]** Try opening with two libraries (e.g. poppler and PyMuPDF). If both fail, `status = failed`, reason `corrupt_pdf`.
 
 ### 4.4 Validation
 
-- [ ] **[P0]** `validate_canonical(text)`: has a heading, a `=` line, at least N `Label: value` lines, and at least the label patterns for a subset of the seven fields. Failing text is `degraded` or `failed` (never silently accepted).
-- [ ] **[P0]** Golden tests: `email_004` (txt pair), `email_005` (xlsx pair), `email_055` (xlsx SI + docx BL), `email_097` (docx BL), `email_499` (text PDF pair), `email_512` (scan pair), `email_511` (corrupt PDF).
-- [ ] **[P1]** Round-trip check: run the Phase 6 parser over the converted output of every readable document and report which of the seven fields could not be found. This is your first measure of converter quality.
-- [ ] **[P1]** `scripts/convert_all.py` converts all 250 attachments and prints a summary table (ok / degraded / failed by format).
+- [x] **[P0]** `validate_canonical(text)`: has a heading, a `=` line, at least N `Label: value` lines, and at least the label patterns for a subset of the seven fields. Failing text is `degraded` or `failed` (never silently accepted).
+- [x] **[P0]** Golden tests: `email_004` (txt pair), `email_005` (xlsx pair), `email_055` (xlsx SI + docx BL), `email_097` (docx BL), `email_499` (text PDF pair), `email_512` (scan pair), `email_511` (corrupt PDF).
+- [x] **[P1]** Round-trip check: run the Phase 6 parser over the converted output of every readable document and report which of the seven fields could not be found. This is your first measure of converter quality.
+- [x] **[P1]** `scripts/convert_all.py` converts all 250 attachments and prints a summary table (ok / degraded / failed by format).
 
 **Deliverables:** `derived/text/*.txt` and `derived/meta/*.json` for all attachments; converter unit tests; summary report.
 
 **DoD:** all `.txt`, `.xlsx`, `.docx` and text-layer PDF attachments convert with `status = ok`; scans convert or are explicitly flagged; the two corrupt PDFs are flagged `failed / corrupt_pdf`; opening any converted file next to a dataset `.txt` looks structurally identical.
 
 **Notes:** the same canonical text now powers the "Formatted" tab in Phase 3 and the side-by-side in Phase 8. Update Phase 3's preview to read from `derived/text/` once this phase lands.
+
+**What changed (2026-09-19):** added deterministic canonical conversion, per-document JSON sidecars, a complete-bundle conversion command, byte-stable golden tests, a reusable preliminary canonical parser, and a seven-field coverage report. The formatted preview now prefers canonical text. Text, XLSX, DOCX, and text-layer PDF sources convert locally; scans use two configured readers when available and otherwise fail explicitly with every comparison field marked uncertain. Corrupt PDFs are double-checked with PyMuPDF and pypdf before being marked `failed / corrupt_pdf`.
 
 ---
 

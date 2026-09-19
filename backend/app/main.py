@@ -45,12 +45,25 @@ def _document(settings: Settings, doc_id: str) -> dict | None:
     with database(settings.database_path) as connection:
         row = connection.execute(
             """
-            SELECT doc_id, path, ext, size, sha256, role_hint
+            SELECT doc_id, path, ext, size, sha256, role_hint, convert_status, text_path
             FROM documents WHERE doc_id = ?
             """,
             (doc_id,),
         ).fetchone()
     return dict(row) if row is not None else None
+
+
+def _canonical_text(settings: Settings, stored_path: str | None) -> str | None:
+    if not stored_path:
+        return None
+    candidate = (settings.derived_dir / stored_path).resolve()
+    try:
+        candidate.relative_to((settings.derived_dir / "text").resolve())
+    except ValueError:
+        return None
+    if not candidate.is_file():
+        return None
+    return candidate.read_text(encoding="utf-8")
 
 
 def create_app(overrides: dict | None = None) -> Flask:
@@ -220,7 +233,8 @@ def create_app(overrides: dict | None = None) -> Flask:
             source_path = attachment_path(settings.data_dir, document["path"])
         except FileNotFoundError:
             abort(404)
-        return jsonify(preview_document(source_path, document, settings.derived_dir))
+        canonical = _canonical_text(settings, document["text_path"]) if document["convert_status"] != "failed" else None
+        return jsonify(preview_document(source_path, document, settings.derived_dir, canonical))
 
     @app.route("/api/documents/<doc_id>/pages/<int:page_number>.png", methods=["GET"])
     def get_pdf_page(doc_id: str, page_number: int):

@@ -60,6 +60,17 @@ Phase 4 converts source attachments into deterministic canonical text under `bac
 
 The formatted attachment view automatically uses canonical text after conversion. The scan vision reader is opt-in: set `GEMINI_ENABLED=true` and provide `GEMINI_API_KEY` only after approving the transmission of rendered scan pages to Gemini. A missing key never blocks the local pipeline.
 
+## Phase 5: classification
+
+Run the offline, rules-first classifier after conversion:
+
+```powershell
+uv run --locked python scripts/classify_all.py
+uv run --locked python scripts/evaluate_classification.py
+```
+
+The classifier stores categories, confidence, reasons, and decision source in SQLite; reruns leave existing decisions untouched and make zero Gemini calls. The optional Gemini fallback is only considered when you deliberately pass `--gemini` **and** set both `GEMINI_ENABLED=true` and `GEMINI_API_KEY`. It sends untrusted email data only at that explicit opt-in point, uses temperature zero, validates strict JSON, and caches responses. With no organizer approval, keep it disabled and use the offline pipeline.
+
 ## Dataset policy
 
 `data/` contains the participant bundle (`inbox/`, `attachments/`, and `sample_submission.json`). It is input-only: never edit, regenerate, or tune against it. Derived output belongs under `backend/derived/`, which is ignored by Git.

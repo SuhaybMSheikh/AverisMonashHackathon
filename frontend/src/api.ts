@@ -6,6 +6,8 @@ export interface EmailSummary {
   subject: string;
   body_snippet: string;
   category: string;
+  category_conf: number | null;
+  decided_by: "rule" | "llm" | null;
   status: Status;
   attachment_count: number;
   formats: string[];
@@ -17,6 +19,9 @@ export interface EmailRecord {
   subject: string;
   body: string;
   category: string;
+  category_conf?: number | null;
+  category_reasons?: string | null;
+  decided_by?: "rule" | "llm" | null;
   status: Status;
   documents: DocumentSummary[];
 }

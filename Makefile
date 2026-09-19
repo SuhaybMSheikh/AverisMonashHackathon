@@ -1,4 +1,4 @@
-.PHONY: backend frontend pipeline reset inspect previews convert conversion-quality test check
+.PHONY: backend frontend pipeline reset inspect previews convert conversion-quality classify classification-eval test check
 
 backend:
 	uv run --locked python app.py
@@ -23,6 +23,12 @@ convert:
 
 conversion-quality:
 	uv run --locked python scripts/report_conversion_quality.py
+
+classify:
+	uv run --locked python scripts/classify_all.py
+
+classification-eval:
+	uv run --locked python scripts/evaluate_classification.py
 
 test:
 	uv run --locked python -m unittest discover -s backend/tests -v

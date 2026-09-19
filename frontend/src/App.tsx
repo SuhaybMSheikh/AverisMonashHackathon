@@ -159,14 +159,14 @@ export function App() {
             {theme === "light" ? "◐" : "◑"}
           </button>
         </div>
-        <button className={`nav-item ${!selectedCategory ? "selected" : ""}`} onClick={() => navigate("/")}>
+        <button className={`nav-item ${!selectedCategory ? "selected" : ""}`} onClick={() => { setPage(1); navigate("/"); }}>
           <span>All</span><strong>{counts.data?.all ?? "—"}</strong>
         </button>
         <PanelState label="counts" state={counts} />
         <div className="nav-section">
           {categoryLabels.map(([value, label]) => (
             <div key={value}>
-              <button className="nav-item placeholder" disabled title="Available after classification in Phase 5">
+              <button className={`nav-item ${selectedCategory === value ? "selected" : ""}`} onClick={() => { setPage(1); navigate(`/category/${value}`); }}>
                 <span>{label}</span><strong>{counts.data?.categories[value] ?? 0}</strong>
               </button>
               {value === "BL_COMPARISON" && (
@@ -182,7 +182,7 @@ export function App() {
             </div>
           ))}
         </div>
-        <p className="sidebar-note">Classification and comparison filters unlock in later phases.</p>
+        <p className="sidebar-note">Categories use detected attachment roles and the email body. Comparison status filters arrive with the comparison engine.</p>
       </aside>
 
       <section className="email-list-panel" aria-label="Email list">
@@ -234,6 +234,7 @@ function EmailCard({ email, active, keyboardActive, onSelect }: { email: EmailSu
       <p className="snippet">{email.body_snippet || "No message body"}</p>
       <div className="card-footer">
         <span className="category-badge">{email.category.replaceAll("_", " ")}</span>
+        {email.category_conf !== null && email.category_conf < 0.75 && <span className="uncertain-chip">Uncertain</span>}
         <span className="format-icons">{email.formats.map((format) => <span title={format} key={format}>{attachmentIcon(format)}</span>)}</span>
       </div>
     </button>

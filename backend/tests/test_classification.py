@@ -1,0 +1,69 @@
+from __future__ import annotations
+
+import tempfile
+import unittest
+from pathlib import Path
+
+from backend.app.classify.pipeline import classify_all
+from backend.app.config import PROJECT_ROOT, settings_from_env
+from backend.app.db import database
+from backend.app.main import create_app
+from backend.app.pipeline.convert import convert_all
+from backend.app.pipeline.ingest import ingest
+from scripts.evaluate_classification import report
+
+
+class ClassificationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.temporary_directory = tempfile.TemporaryDirectory()
+        root = Path(cls.temporary_directory.name)
+        cls.settings = settings_from_env({"DATA_DIR": PROJECT_ROOT / "data", "DATABASE_PATH": root / "index.sqlite3", "DERIVED_DIR": root / "derived"})
+        ingest(cls.settings, reset=True)
+        convert_all(cls.settings)
+        cls.first = classify_all(cls.settings)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.temporary_directory.cleanup()
+
+    def test_every_email_is_persisted_in_one_of_the_five_categories(self):
+        self.assertEqual(0, self.first.gemini_calls)
+        with database(self.settings.database_path) as connection:
+            rows = connection.execute("SELECT email_id, category, decided_by FROM emails").fetchall()
+        self.assertEqual(520, len(rows))
+        self.assertNotIn("UNCLASSIFIED", {row["category"] for row in rows})
+        self.assertEqual({"rule"}, {row["decided_by"] for row in rows})
+
+    def test_documented_known_traps_are_rules(self):
+        with database(self.settings.database_path) as connection:
+            rows = {row["email_id"]: row for row in connection.execute("SELECT email_id, category, decided_by, category_reasons FROM emails WHERE email_id IN ('email_003', 'email_012', 'email_021')")}
+        self.assertEqual("GENERAL", rows["email_003"]["category"])
+        self.assertIn("draft_bl_request_without_attachment", rows["email_003"]["category_reasons"])
+        self.assertEqual("GENERAL", rows["email_012"]["category"])
+        self.assertEqual("GENERAL", rows["email_021"]["category"])
+        self.assertEqual({"rule"}, {row["decided_by"] for row in rows.values()})
+
+    def test_rerun_does_not_call_gemini_or_change_categories(self):
+        rerun = classify_all(self.settings, use_gemini=True)
+        self.assertEqual(0, rerun.gemini_calls)
+        self.assertEqual(520, rerun.skipped)
+
+    def test_api_exposes_real_category_counts_and_confidence(self):
+        app = create_app({"DATA_DIR": self.settings.data_dir, "DATABASE_PATH": self.settings.database_path, "DERIVED_DIR": self.settings.derived_dir})
+        client = app.test_client()
+        counts = client.get("/api/emails/counts").get_json()
+        self.assertEqual(520, counts["all"])
+        self.assertGreater(counts["categories"]["BL_COMPARISON"], 0)
+        item = client.get("/api/emails?category=BL_COMPARISON&page_size=1").get_json()[0]
+        self.assertIn("category_conf", item)
+        self.assertIn("decided_by", item)
+
+    def test_team_dev_set_report_is_available(self):
+        result = report(PROJECT_ROOT / "dev_labels" / "classification_dev_set.json", self.settings.database_path)
+        self.assertIn("Confusion matrix", result)
+        self.assertIn("BL_COMPARISON", result)
+
+
+if __name__ == "__main__":
+    unittest.main()

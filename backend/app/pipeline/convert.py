@@ -555,8 +555,8 @@ def convert_all(settings: Settings, document_ids: set[str] | None = None) -> lis
         for result in results:
             text_path, meta_path = _write_conversion(settings, result)
             connection.execute(
-                """UPDATE documents SET convert_status = ?, convert_method = ?, text_path = ?, meta_path = ? WHERE doc_id = ?""",
-                (result.metadata["status"], result.metadata["method"], text_path, meta_path, result.doc_id),
+                """UPDATE documents SET role_detected = ?, convert_status = ?, convert_method = ?, text_path = ?, meta_path = ? WHERE doc_id = ?""",
+                (result.metadata["role"], result.metadata["status"], result.metadata["method"], text_path, meta_path, result.doc_id),
             )
     return results
 

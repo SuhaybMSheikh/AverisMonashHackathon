@@ -129,7 +129,7 @@ def create_app(overrides: dict | None = None) -> Flask:
             total = connection.execute("SELECT COUNT(*)" + joins + where, parameters).fetchone()[0]
             rows = connection.execute(
                 """
-                SELECT e.email_id, e.from_addr, e.subject, e.body, e.category, c.status,
+                SELECT e.email_id, e.from_addr, e.subject, e.body, e.category, e.category_conf, e.decided_by, c.status,
                        COUNT(d.doc_id) AS attachment_count, GROUP_CONCAT(d.ext) AS formats
                 """
                 + joins
@@ -146,6 +146,8 @@ def create_app(overrides: dict | None = None) -> Flask:
                 "subject": row["subject"],
                 "body_snippet": _snippet(row["body"]),
                 "category": row["category"],
+                "category_conf": row["category_conf"],
+                "decided_by": row["decided_by"],
                 "status": row["status"],
                 "attachment_count": row["attachment_count"],
                 "formats": sorted(set(filter(None, (row["formats"] or "").split(",")))),

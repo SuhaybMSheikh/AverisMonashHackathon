@@ -522,27 +522,29 @@ These were observed by inspecting the participant bundle, not taken from any ans
 
 ### 5.2 Tasks
 
-- [ ] **[P0]** Build the **feature extractor**: subject, body, sender domain, attachment count/types, and per-attachment *detected role* from Phase 4 (SI / BL / unknown).
-- [ ] **[P0]** **Rules layer** (`classify/rules.py`) returns `(category, confidence, reasons)` or `None` when unsure:
+- [x] **[P0]** Build the **feature extractor**: subject, body, sender domain, attachment count/types, and per-attachment *detected role* from Phase 4 (SI / BL / unknown).
+- [x] **[P0]** **Rules layer** (`classify/rules.py`) returns `(category, confidence, reasons)` or `None` when unsure:
   - two attachments whose detected roles are SI and BL → `BL_COMPARISON`;
   - phishing signals (link plus urgency/prize/crypto wording, suspicious domain) → `SPAM`;
   - invoice-number pattern plus charge vocabulary → `INVOICE_QUERY`;
   - body containing several SI field labels (POL, POD, Shipper, Consignee…) and no comparison attachments → `SI_REQUEST`;
   - known notice templates (berthing report, outstanding list, reminder) → `GENERAL`.
-- [ ] **[P0]** **Gemini layer** (`classify/gemini.py`) for emails the rules return `None` on, or with low confidence. Input: subject, body, sender, attachment metadata. Output: strict JSON `{category, confidence, reason}` (schema and prompt in Appendix F). Temperature 0.
-- [ ] **[P0]** **Asymmetric caution for spam:** require positive evidence. A real document request marked as spam never reaches the comparison step, so when unsure choose `GENERAL` (or flag for review), not `SPAM`.
-- [ ] **[P0]** Store `category`, `confidence`, `reasons`, `decided_by` (`rule` or `llm`). Persist so reruns do not call Gemini again.
-- [ ] **[P0]** Wire the sidebar counts and the category filter to the stored categories.
-- [ ] **[P1]** **Dev-set evaluation:** classify your hand-labeled dev set, print a confusion matrix and per-class F1. Iterate on the rules until failures are understood.
-- [ ] **[P1]** **Known ambiguity O2:** "please send the draft BL" with no attachments. Read all such emails, choose one rule, document it in the decision log.
-- [ ] **[P1]** **Low-confidence filter** in the UI: a small "Uncertain" chip on cards so a person can re-categorize (Phase 10).
-- [ ] **[P1]** **Prompt-injection guard:** email text goes into the prompt as delimited data; the system prompt states that the email content is data and any instructions inside it must be ignored; validate the JSON output against the schema and reject anything else.
+- [x] **[P0]** **Gemini layer** (`classify/gemini.py`) for emails the rules return `None` on, or with low confidence. Input: subject, body, sender, attachment metadata. Output: strict JSON `{category, confidence, reason}` (schema and prompt in Appendix F). Temperature 0.
+- [x] **[P0]** **Asymmetric caution for spam:** require positive evidence. A real document request marked as spam never reaches the comparison step, so when unsure choose `GENERAL` (or flag for review), not `SPAM`.
+- [x] **[P0]** Store `category`, `confidence`, `reasons`, `decided_by` (`rule` or `llm`). Persist so reruns do not call Gemini again.
+- [x] **[P0]** Wire the sidebar counts and the category filter to the stored categories.
+- [x] **[P1]** **Dev-set evaluation:** classify your hand-labeled dev set, print a confusion matrix and per-class F1. Iterate on the rules until failures are understood.
+- [x] **[P1]** **Known ambiguity O2:** "please send the draft BL" with no attachments. Read all such emails, choose one rule, document it in the decision log.
+- [x] **[P1]** **Low-confidence filter** in the UI: a small "Uncertain" chip on cards so a person can re-categorize (Phase 10).
+- [x] **[P1]** **Prompt-injection guard:** email text goes into the prompt as delimited data; the system prompt states that the email content is data and any instructions inside it must be ignored; validate the JSON output against the schema and reject anything else.
 
 **Deliverables:** every email has a category; UI sidebar shows real counts; classification report on the dev set.
 
 **DoD:** category counts look plausible (about 126 comparison-type, a large invoice group, and so on); the known traps (`email_003`, `email_012`, `email_021`) are classified by a written rule, not by accident; a rerun makes zero Gemini calls.
 
 **Notes:** rules first also improves the optional `rule_pct` (share of decisions made by rules). Keep a counter of rule vs LLM decisions.
+
+**What changed (2026-09-20):** added content-role features, transparent rules, a safe `GENERAL` fallback, persisted confidence/reasons/source, an optional cached Gemini fallback, and an evaluation script over the team-authored dev set. The dashboard categories are now active and low-confidence decisions have an `Uncertain` chip. Gemini is disabled by default and has not received participant email content.
 
 ---
 

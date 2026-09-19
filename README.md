@@ -71,6 +71,28 @@ uv run --locked python scripts/evaluate_classification.py
 
 The classifier stores categories, confidence, reasons, and decision source in SQLite; reruns leave existing decisions untouched and make zero Gemini calls. The optional Gemini fallback is only considered when you deliberately pass `--gemini` **and** set both `GEMINI_ENABLED=true` and `GEMINI_API_KEY`. It sends untrusted email data only at that explicit opt-in point, uses temperature zero, validates strict JSON, and caches responses. With no organizer approval, keep it disabled and use the offline pipeline.
 
+## Phase 6: extraction and normalization
+
+After conversion, extract the seven comparison fields and their evidence into SQLite:
+
+```powershell
+uv run --locked python scripts/extract_all.py
+```
+
+This produces one `extractions` row per field per document (`found`, `blank`, or `missing`), preserves display-only labels in `extraction_extras`, and writes `backend/derived/extraction_coverage.json` plus `backend/derived/unknown_labels.json`. The parser preserves continuation lines; normalizers remove only comparison-irrelevant formatting. `--gemini` is an optional, explicit opt-in for unknown-label discovery and caches learned aliases locally.
+
+## Phase 7: deterministic comparison
+
+Run the complete persisted pipeline with:
+
+```powershell
+uv run --locked python -m backend.app.pipeline.runner --all
+```
+
+It converts, classifies, extracts, and compares every indexed email. For `BL_COMPARISON` emails, comparison checks the seven canonical fields in a fixed order and stores `OK`, `MISMATCH`, or `NEEDS_REVIEW` together with field evidence, human-readable explanations, and severity metadata. Missing attachments, unreadable documents, wrong document types, missing values, and low-confidence extraction take precedence over a mismatch. Port names are normalized for formatting while supplied UN/LOCODEs must agree when both documents include them.
+
+Results are persisted in `comparisons` and available at `GET /api/emails/{email_id}/comparison`; the endpoint is read-only and returns the pipeline's stored result. Per-email `convert`, `classify`, `extract`, and `compare` stage outcomes are recorded in `stage_runs`. Re-running unchanged inputs preserves comparison timestamps and verdicts.
+
 ## Dataset policy
 
 `data/` contains the participant bundle (`inbox/`, `attachments/`, and `sample_submission.json`). It is input-only: never edit, regenerate, or tune against it. Derived output belongs under `backend/derived/`, which is ignored by Git.

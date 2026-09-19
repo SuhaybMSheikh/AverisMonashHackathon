@@ -50,6 +50,14 @@ CREATE TABLE IF NOT EXISTS extractions (
     PRIMARY KEY (doc_id, field)
 );
 
+CREATE TABLE IF NOT EXISTS extraction_extras (
+    doc_id TEXT NOT NULL REFERENCES documents(doc_id) ON DELETE CASCADE,
+    label TEXT NOT NULL,
+    raw TEXT NOT NULL,
+    line_no INTEGER NOT NULL,
+    PRIMARY KEY (doc_id, line_no)
+);
+
 CREATE TABLE IF NOT EXISTS comparisons (
     email_id TEXT PRIMARY KEY REFERENCES emails(email_id) ON DELETE CASCADE,
     status TEXT,

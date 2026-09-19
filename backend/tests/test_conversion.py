@@ -98,6 +98,10 @@ class ConversionTests(unittest.TestCase):
         self.assertEqual("canonical_text", payload["metadata"]["formatted_source"])
         self.assertTrue(any(field["label"] == "B/L NO.(提单号)" for field in payload["fields"]))
 
+        canonical = app.test_client().get("/api/documents/email_055_BL/text")
+        self.assertEqual(200, canonical.status_code)
+        self.assertTrue(canonical.get_data(as_text=True).startswith("BILL OF LADING (DRAFT)"))
+
 
 if __name__ == "__main__":
     unittest.main()

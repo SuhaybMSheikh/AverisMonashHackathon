@@ -1,4 +1,4 @@
-.PHONY: backend frontend pipeline reset inspect previews convert conversion-quality classify classification-eval test check
+.PHONY: backend frontend pipeline reset inspect previews convert conversion-quality extract compare classify classification-eval test check
 
 backend:
 	uv run --locked python app.py
@@ -23,6 +23,12 @@ convert:
 
 conversion-quality:
 	uv run --locked python scripts/report_conversion_quality.py
+
+extract:
+	uv run --locked python scripts/extract_all.py
+
+compare:
+	uv run --locked python -m backend.app.pipeline.runner --all
 
 classify:
 	uv run --locked python scripts/classify_all.py

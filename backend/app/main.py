@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import mimetypes
+import json
 import re
 import sqlite3
 from flask import Flask, abort, jsonify, request, send_file
@@ -210,6 +211,21 @@ def create_app(overrides: dict | None = None) -> Flask:
             ).fetchall()
         return jsonify([dict(document) for document in documents])
 
+    @app.route("/api/emails/<email_id>/comparison", methods=["GET"])
+    def get_comparison(email_id: str):
+        with database(settings.database_path) as connection:
+            row = connection.execute(
+                "SELECT email_id, status, review_reason, has_defect, defect_fields, field_results, explanations FROM comparisons WHERE email_id = ?",
+                (email_id,),
+            ).fetchone()
+        if row is None:
+            abort(404)
+        comparison = dict(row)
+        comparison["has_defect"] = bool(comparison["has_defect"])
+        for field in ("defect_fields", "field_results", "explanations"):
+            comparison[field] = json.loads(comparison[field] or "[]")
+        return jsonify(comparison)
+
     @app.route("/api/documents/<doc_id>/original", methods=["GET"])
     def get_original(doc_id: str):
         document = _document(settings, doc_id)
@@ -237,6 +253,16 @@ def create_app(overrides: dict | None = None) -> Flask:
             abort(404)
         canonical = _canonical_text(settings, document["text_path"]) if document["convert_status"] != "failed" else None
         return jsonify(preview_document(source_path, document, settings.derived_dir, canonical))
+
+    @app.route("/api/documents/<doc_id>/text", methods=["GET"])
+    def get_canonical_text(doc_id: str):
+        document = _document(settings, doc_id)
+        if document is None:
+            abort(404)
+        canonical = _canonical_text(settings, document["text_path"])
+        if document["convert_status"] == "failed" or canonical is None:
+            abort(404)
+        return app.response_class(canonical, mimetype="text/plain")
 
     @app.route("/api/documents/<doc_id>/pages/<int:page_number>.png", methods=["GET"])
     def get_pdf_page(doc_id: str, page_number: int):

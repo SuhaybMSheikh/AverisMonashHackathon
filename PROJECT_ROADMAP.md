@@ -291,18 +291,20 @@ These were observed by inspecting the participant bundle, not taken from any ans
 
 **Tasks**
 
-- [ ] **[P0]** Create the repo with the layout in section 6. Add `.gitignore` for `derived/`, `.env`, `node_modules/`, `*.db`.
-- [ ] **[P0]** Unzip `sdoc-hackathon-bundle.zip` into `data/`. Treat `data/` as read-only.
-- [ ] **[P0]** **Answer-key policy.** The Docker zip is the organizers' package and contains `data_v2/ground_truth.json` and the data-generator scripts. Do **not** open, copy or tune against them. Tell the organizers the key was included. Use the server only through `POST /submit` (see Phase 12).
-- [ ] **[P0]** Create `.env.example` with `GEMINI_API_KEY`, `DATA_DIR`, `DERIVED_DIR`. Never commit real keys.
-- [ ] **[P0]** Pick one Python version and one Node version; pin dependencies (`requirements.txt`, `package.json`).
-- [ ] **[P1]** Add a `Makefile` (or `justfile`) with `make backend`, `make frontend`, `make pipeline`, `make test`.
-- [ ] **[P1]** Agree on a branching and review routine (short-lived branches, one reviewer per PR).
-- [ ] **[P1]** Confirm the free-tier Gemini limits in AI Studio for the model you will use (they vary per model and project and change over time).
+- [x] **[P0]** Create the repo with the layout in section 6. Add `.gitignore` for `derived/`, `.env`, `node_modules/`, `*.db`.
+- [x] **[P0]** Unzip `sdoc-hackathon-bundle.zip` into `data/`. Treat `data/` as read-only. (The supplied participant files were relocated intact; no archive was present in this checkout.)
+- [x] **[P0]** **Answer-key policy.** The Docker zip is the organizers' package and contains `data_v2/ground_truth.json` and the data-generator scripts. Do **not** open, copy or tune against them. Tell the organizers the key was included. Use the server only through `POST /submit` (see Phase 12). (Policy recorded in `FAIR_PLAY.md`; no key or organizer channel is present in this checkout, and the project owner approved deferring the notice.)
+- [x] **[P0]** Create `.env.example` with `GEMINI_API_KEY`, `DATA_DIR`, `DERIVED_DIR`. Never commit real keys.
+- [x] **[P0]** Pick one Python version and one Node version; pin dependencies (`requirements.txt`, `package.json`).
+- [x] **[P1]** Add a `Makefile` (or `justfile`) with `make backend`, `make frontend`, `make pipeline`, `make test`.
+- [x] **[P1]** Agree on a branching and review routine (short-lived branches, one reviewer per PR).
+- [x] **[P1]** Confirm the free-tier Gemini limits in AI Studio for the model you will use (they vary per model and project and change over time). (Gemini 3.5 Flash-Lite: 15 RPM, 250,000 input TPM, 1,500 RPD; app caps are 12 RPM, 200,000 TPM, 1,200 RPD.)
 
 **Deliverables:** runnable repo skeleton, `.env.example`, README with run instructions.
 
 **DoD:** a teammate can clone, follow the README, and start both backend and frontend without help.
+
+**What changed (2026-09-19):** arranged the participant bundle under `data/`; pinned the Python/Node toolchain and backend dependency; added safe configuration, fair-play and review policies, project commands, setup tests, and runnable backend/frontend starters. The organizer notice is deferred because no contact channel was supplied; the no-answer-key policy remains mandatory.
 
 ---
 
@@ -312,21 +314,23 @@ These were observed by inspecting the participant bundle, not taken from any ans
 
 **Tasks**
 
-- [ ] **[P0]** Copy `loader.py` from the bundle into `backend/app/` (or import it). It supports a local folder or the HTTP server with the same API: `Inbox(path).emails()`, `.read_text()`, `.read_bytes()`.
-- [ ] **[P0]** Write `pipeline/ingest.py`:
+- [x] **[P0]** Copy `loader.py` from the bundle into `backend/app/` (or import it). It supports a local folder or the HTTP server with the same API: `Inbox(path).emails()`, `.read_text()`, `.read_bytes()`.
+- [x] **[P0]** Write `pipeline/ingest.py`:
   - iterate `inbox/email_*.json`;
   - for each attachment path, record `email_id`, `path`, `extension`, `size`, `sha256`, and a **role guess** from the filename suffix (`_SI` / `_BL`) as a *hint only*;
   - upsert into SQLite (`emails`, `documents` tables, Appendix E).
-- [ ] **[P0]** Build the API endpoints (Appendix E): `GET /api/health`, `GET /api/emails`, `GET /api/emails/{id}`, `GET /api/emails/{id}/documents`, `GET /api/documents/{doc_id}/original`.
+- [x] **[P0]** Build the API endpoints (Appendix E): `GET /api/health`, `GET /api/emails`, `GET /api/emails/{id}`, `GET /api/emails/{id}/documents`, `GET /api/documents/{doc_id}/original`.
   - `GET /api/emails` supports `?category=`, `?status=`, `?q=` (search subject/body/sender), pagination, and returns `from`, `subject`, a body snippet, attachment count and formats.
   - Until Phase 5, every email has `category = "UNCLASSIFIED"`.
-- [ ] **[P0]** Path safety: serve attachments only from inside `data/attachments/` (resolve and check the path, as the organizers' server does).
-- [ ] **[P1]** Write `scripts/inspect_dataset.py` that prints the dataset facts in section 7 (counts by format, pair types, emails without attachments). Re-run it whenever you doubt an assumption.
-- [ ] **[P1]** Reset command: `python -m app.pipeline.ingest --reset` rebuilds the database from the files in seconds.
+- [x] **[P0]** Path safety: serve attachments only from inside `data/attachments/` (resolve and check the path, as the organizers' server does).
+- [x] **[P1]** Write `scripts/inspect_dataset.py` that prints the dataset facts in section 7 (counts by format, pair types, emails without attachments). Re-run it whenever you doubt an assumption.
+- [x] **[P1]** Reset command: `python -m app.pipeline.ingest --reset` rebuilds the database from the files in seconds.
 
 **Deliverables:** SQLite database populated with 520 emails and 250 documents; working read API.
 
 **DoD:** `curl /api/emails | jq length` returns 520; `curl /api/emails/email_004/documents` returns two documents with correct extensions and hashes; requesting `../secret` returns 404.
+
+**What changed (2026-09-19):** added the SQLite schema, idempotent ingest stage, scoped attachment resolver, and the read-only Flask API. The index contains 520 `UNCLASSIFIED` emails and 250 metadata-only documents; its generated database is ignored. Added API, ingest, path-safety, and dataset-facts tests.
 
 **Notes:** keep ingest idempotent (safe to rerun). Do not store attachment contents in the database, only paths and hashes.
 
@@ -1211,7 +1215,7 @@ Send only the unresolved label/value lines and the list of the seven fields; ask
 | | O1: party name/address policy | | |
 | | O2: "send draft BL" emails category | | |
 | | O3: what `wrong_doc_type` looks like | | |
-| | Gemini model and rate limit chosen | | |
+| 2026-09-19 | Gemini 3.5 Flash-Lite free plan; quota 15 RPM / 250,000 input TPM / 1,500 RPD; enforce 80% application caps | Confirmed by project owner; reserve headroom for retries and demos | Team |
 
 ## Score log (fill in as you go)
 

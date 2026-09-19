@@ -1,0 +1,22 @@
+.PHONY: backend frontend pipeline reset inspect test check
+
+backend:
+	uv run --locked python app.py
+
+frontend:
+	npm --prefix frontend run dev
+
+pipeline:
+	uv run --locked python -m backend.app.pipeline.ingest
+
+reset:
+	uv run --locked python -m backend.app.pipeline.ingest --reset
+
+inspect:
+	uv run --locked python scripts/inspect_dataset.py
+
+test:
+	uv run --locked python -m unittest discover -s backend/tests -v
+	npm --prefix frontend run check
+
+check: pipeline test

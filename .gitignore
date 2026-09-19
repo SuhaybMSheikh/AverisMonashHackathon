@@ -1,0 +1,33 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Generated project artifacts
+backend/derived/
+derived/
+*.db
+*.sqlite
+*.sqlite3
+
+# Dependency environments and build outputs
+.venv/
+node_modules/
+frontend/node_modules/
+dist/
+build/
+
+# Tool caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage/
+.coverage
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

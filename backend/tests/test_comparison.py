@@ -39,6 +39,13 @@ class ComparisonTests(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         self.assertIn("field_results", response.get_json())
 
+    def test_api_can_sort_bl_comparisons_with_mismatches_first(self):
+        app = create_app({"DATA_DIR": self.settings.data_dir, "DATABASE_PATH": self.settings.database_path, "DERIVED_DIR": self.settings.derived_dir})
+        response = app.test_client().get("/api/emails?category=BL_COMPARISON&sort=mismatch_first&page_size=520")
+        self.assertEqual(200, response.status_code)
+        rank = {"MISMATCH": 0, "NEEDS_REVIEW": 1, "OK": 2, None: 3}
+        self.assertEqual(sorted(rank[row["status"]] for row in response.get_json()), [rank[row["status"]] for row in response.get_json()])
+
     def test_port_codes_must_match_when_both_are_present(self):
         left = {"normalized": "NANTONG CHINA", "raw": "NANTONG, CHINA (CNNTG)"}
         right = {"normalized": "NANTONG CHINA", "raw": "NANTONG CHINA (CNSHA)"}

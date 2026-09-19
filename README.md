@@ -93,6 +93,12 @@ It converts, classifies, extracts, and compares every indexed email. For `BL_COM
 
 Results are persisted in `comparisons` and available at `GET /api/emails/{email_id}/comparison`; the endpoint is read-only and returns the pipeline's stored result. Per-email `convert`, `classify`, `extract`, and `compare` stage outcomes are recorded in `stage_runs`. Re-running unchanged inputs preserves comparison timestamps and verdicts.
 
+## Phase 8: BL comparison workspace
+
+Open a `BL_COMPARISON` email in the dashboard to see its persisted verdict, seven fixed SI-versus-draft-BL rows, and field-summary chips. Only differing BL values receive a red highlight; the SI reference stays unhighlighted and is shown beneath each discrepancy. `NEEDS_REVIEW` cases use amber treatment and clear missing-document or unreadable-document placeholders.
+
+The sidebar supports `Mismatch`, `Needs review`, and `OK` subfilters. The detail view has an aligned comparison view and a canonical document view, which shows the full converted SI and BL text while highlighting only differing BL values. Attachments remain downloadable as immutable originals.
+
 ## Dataset policy
 
 `data/` contains the participant bundle (`inbox/`, `attachments/`, and `sample_submission.json`). It is input-only: never edit, regenerate, or tune against it. Derived output belongs under `backend/derived/`, which is ignored by Git.

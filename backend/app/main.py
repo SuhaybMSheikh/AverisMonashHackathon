@@ -98,7 +98,9 @@ def create_app(overrides: dict | None = None) -> Flask:
             for row in connection.execute("SELECT category, COUNT(*) AS count FROM emails GROUP BY category"):
                 categories[row["category"]] = row["count"]
             for row in connection.execute(
-                "SELECT status, COUNT(*) AS count FROM comparisons WHERE status IS NOT NULL GROUP BY status"
+                """SELECT c.status, COUNT(*) AS count FROM comparisons c
+                   JOIN emails e ON e.email_id = c.email_id
+                   WHERE e.category = 'BL_COMPARISON' AND c.status IS NOT NULL GROUP BY c.status"""
             ):
                 statuses[row["status"]] = row["count"]
         return jsonify({"all": total, "categories": categories, "statuses": statuses})
@@ -107,6 +109,7 @@ def create_app(overrides: dict | None = None) -> Flask:
     def list_emails():
         category = request.args.get("category")
         status = request.args.get("status")
+        sort = request.args.get("sort")
         query = request.args.get("q", "").strip()
         page = _integer_argument("page", 1, minimum=1, maximum=10000)
         page_size = _integer_argument("page_size", 520, minimum=1, maximum=520)
@@ -123,6 +126,8 @@ def create_app(overrides: dict | None = None) -> Flask:
             like = f"%{query.lower()}%"
             conditions.append("(LOWER(e.from_addr) LIKE ? OR LOWER(e.subject) LIKE ? OR LOWER(e.body) LIKE ?)")
             parameters.extend([like, like, like])
+        if sort not in (None, "mismatch_first"):
+            abort(400, description="sort must be mismatch_first")
         where = " WHERE " + " AND ".join(conditions) if conditions else ""
         joins = " FROM emails e LEFT JOIN comparisons c ON c.email_id = e.email_id"
 
@@ -136,7 +141,9 @@ def create_app(overrides: dict | None = None) -> Flask:
                 + joins
                 + " LEFT JOIN documents d ON d.email_id = e.email_id"
                 + where
-                + " GROUP BY e.email_id ORDER BY e.email_id LIMIT ? OFFSET ?",
+                + " GROUP BY e.email_id ORDER BY "
+                + ("CASE c.status WHEN 'MISMATCH' THEN 0 WHEN 'NEEDS_REVIEW' THEN 1 WHEN 'OK' THEN 2 ELSE 3 END, e.email_id" if sort == "mismatch_first" else "e.email_id")
+                + " LIMIT ? OFFSET ?",
                 [*parameters, page_size, (page - 1) * page_size],
             ).fetchall()
 

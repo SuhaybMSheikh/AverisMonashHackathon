@@ -74,6 +74,28 @@ export interface EmailListResult {
   total: number;
 }
 
+export interface FieldComparison {
+  field: string;
+  si_raw: string | null;
+  bl_raw: string | null;
+  si_norm: string | null;
+  bl_norm: string | null;
+  equal: boolean;
+  diff_kind: "equal" | "format_only" | "value";
+  confidence: number;
+  severity?: "high";
+}
+
+export interface Comparison {
+  email_id: string;
+  status: Exclude<Status, null>;
+  review_reason: "missing_attachment" | "unreadable" | "wrong_doc_type" | "missing_value" | null;
+  has_defect: boolean;
+  defect_fields: string[];
+  field_results: FieldComparison[];
+  explanations: string[];
+}
+
 async function request<T>(path: string): Promise<{ data: T; response: Response }> {
   const response = await fetch(path, { headers: { Accept: "application/json" } });
   if (!response.ok) {
@@ -86,9 +108,11 @@ export const api = {
   async counts(): Promise<EmailCounts> {
     return (await request<EmailCounts>("/api/emails/counts")).data;
   },
-  async emails(options: { category?: string; query?: string; page: number; pageSize: number }): Promise<EmailListResult> {
+  async emails(options: { category?: string; status?: Exclude<Status, null>; sort?: "mismatch_first"; query?: string; page: number; pageSize: number }): Promise<EmailListResult> {
     const parameters = new URLSearchParams({ page: String(options.page), page_size: String(options.pageSize) });
     if (options.category) parameters.set("category", options.category);
+    if (options.status) parameters.set("status", options.status);
+    if (options.sort) parameters.set("sort", options.sort);
     if (options.query) parameters.set("q", options.query);
     const { data, response } = await request<EmailSummary[]>(`/api/emails?${parameters}`);
     return { emails: data, total: Number(response.headers.get("X-Total-Count") ?? data.length) };
@@ -101,5 +125,13 @@ export const api = {
   },
   async preview(documentId: string): Promise<DocumentPreview> {
     return (await request<DocumentPreview>(`/api/documents/${encodeURIComponent(documentId)}/preview`)).data;
+  },
+  async comparison(emailId: string): Promise<Comparison> {
+    return (await request<Comparison>(`/api/emails/${encodeURIComponent(emailId)}/comparison`)).data;
+  },
+  async text(documentId: string): Promise<string> {
+    const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}/text`, { headers: { Accept: "text/plain" } });
+    if (!response.ok) throw new Error(`Request failed (${response.status})`);
+    return response.text();
   },
 };

@@ -1,0 +1,14 @@
+{
+  "name": "shipping-document-verification-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "engines": {
+    "node": "24.19.0",
+    "npm": "11.17.0"
+  },
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "check": "node --check server.mjs"
+  }
+}

@@ -19,6 +19,7 @@ class DataLayerTests(unittest.TestCase):
             {
                 "DATA_DIR": PROJECT_ROOT / "data",
                 "DATABASE_PATH": Path(cls.temporary_directory.name) / "index.sqlite3",
+                "DERIVED_DIR": Path(cls.temporary_directory.name) / "derived",
             }
         )
         cls.result = ingest(cls.settings, reset=True)
@@ -87,6 +88,7 @@ class DataLayerTests(unittest.TestCase):
 
     def test_path_traversal_is_not_served(self):
         self.assertEqual(404, self.client.get("/api/documents/..%2Fsecret/original").status_code)
+        self.assertEqual(404, self.client.get("/api/documents/..%2Fsecret/preview").status_code)
         with self.assertRaises(FileNotFoundError):
             attachment_path(self.settings.data_dir, "attachments/../secret")
 
@@ -99,6 +101,60 @@ class DataLayerTests(unittest.TestCase):
         self.assertEqual(200, email.status_code)
         self.assertEqual("email_004", email.get_json()["email_id"])
         self.assertEqual(2, len(email.get_json()["documents"]))
+
+    def test_counts_endpoint_exposes_sidebar_data(self):
+        response = self.client.get("/api/emails/counts")
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            {
+                "all": 520,
+                "categories": {
+                    "BL_COMPARISON": 0,
+                    "SI_REQUEST": 0,
+                    "INVOICE_QUERY": 0,
+                    "GENERAL": 0,
+                    "SPAM": 0,
+                    "UNCLASSIFIED": 520,
+                },
+                "statuses": {"OK": 0, "MISMATCH": 0, "NEEDS_REVIEW": 0},
+            },
+            response.get_json(),
+        )
+
+    def test_every_attachment_has_a_safe_preview(self):
+        with database(self.settings.database_path) as connection:
+            document_ids = [row["doc_id"] for row in connection.execute("SELECT doc_id FROM documents")]
+
+        previews = {}
+        for document_id in document_ids:
+            response = self.client.get(f"/api/documents/{document_id}/preview")
+            self.assertEqual(200, response.status_code, document_id)
+            previews[document_id] = response.get_json()
+
+        unreadable = {doc_id for doc_id, preview in previews.items() if preview.get("error") == "unreadable"}
+        self.assertEqual({"email_511_BL", "email_515_BL"}, unreadable)
+        self.assertTrue(all(previews[doc_id]["metadata"]["classification"] == "corrupt" for doc_id in unreadable))
+        for doc_id, preview in previews.items():
+            if doc_id not in unreadable:
+                self.assertNotIn("error", preview, doc_id)
+                self.assertIn("original", preview, doc_id)
+
+        scans = [preview for preview in previews.values() if preview.get("metadata", {}).get("classification") == "scan"]
+        self.assertGreater(len(scans), 0)
+        first_page = scans[0]["original"]["pages"][0]
+        page_response = self.client.get(first_page)
+        self.assertEqual(200, page_response.status_code)
+        self.assertEqual("image/png", page_response.mimetype)
+        page_response.close()
+
+    def test_format_metadata_is_exposed_for_representative_files(self):
+        spreadsheet = self.client.get("/api/documents/email_055_SI/preview").get_json()
+        word_document = self.client.get("/api/documents/email_055_BL/preview").get_json()
+        pdf = self.client.get("/api/documents/email_059_SI/preview").get_json()
+
+        self.assertIn("sheet_name", spreadsheet["metadata"])
+        self.assertGreaterEqual(word_document["metadata"]["table_count"], 1)
+        self.assertEqual("text_layer", pdf["metadata"]["classification"])
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ from flask import Flask, abort, jsonify, request, send_file
 from .config import Settings, settings_from_env
 from .db import database, initialize
 from .pipeline.ingest import attachment_path, ingest
+from .preview import preview_document, rendered_pdf_page
 
 
 VALID_DOCUMENT_ID = re.compile(r"^[A-Za-z0-9_.-]+$")
@@ -38,6 +39,20 @@ def _not_found(_: Exception):
     return jsonify({"error": "not_found"}), 404
 
 
+def _document(settings: Settings, doc_id: str) -> dict | None:
+    if not VALID_DOCUMENT_ID.fullmatch(doc_id):
+        return None
+    with database(settings.database_path) as connection:
+        row = connection.execute(
+            """
+            SELECT doc_id, path, ext, size, sha256, role_hint
+            FROM documents WHERE doc_id = ?
+            """,
+            (doc_id,),
+        ).fetchone()
+    return dict(row) if row is not None else None
+
+
 def create_app(overrides: dict | None = None) -> Flask:
     app = Flask(__name__)
     settings = settings_from_env(overrides)
@@ -59,6 +74,20 @@ def create_app(overrides: dict | None = None) -> Flask:
             )
         except sqlite3.Error:
             return jsonify({"status": "unhealthy", "database": "unavailable"}), 500
+
+    @app.route("/api/emails/counts", methods=["GET"])
+    def email_counts():
+        categories = {name: 0 for name in ("BL_COMPARISON", "SI_REQUEST", "INVOICE_QUERY", "GENERAL", "SPAM")}
+        statuses = {name: 0 for name in ("OK", "MISMATCH", "NEEDS_REVIEW")}
+        with database(settings.database_path) as connection:
+            total = connection.execute("SELECT COUNT(*) FROM emails").fetchone()[0]
+            for row in connection.execute("SELECT category, COUNT(*) AS count FROM emails GROUP BY category"):
+                categories[row["category"]] = row["count"]
+            for row in connection.execute(
+                "SELECT status, COUNT(*) AS count FROM comparisons WHERE status IS NOT NULL GROUP BY status"
+            ):
+                statuses[row["status"]] = row["count"]
+        return jsonify({"all": total, "categories": categories, "statuses": statuses})
 
     @app.route("/api/emails", methods=["GET"])
     def list_emails():
@@ -168,12 +197,7 @@ def create_app(overrides: dict | None = None) -> Flask:
 
     @app.route("/api/documents/<doc_id>/original", methods=["GET"])
     def get_original(doc_id: str):
-        if not VALID_DOCUMENT_ID.fullmatch(doc_id):
-            abort(404)
-        with database(settings.database_path) as connection:
-            document = connection.execute(
-                "SELECT path FROM documents WHERE doc_id = ?", (doc_id,)
-            ).fetchone()
+        document = _document(settings, doc_id)
         if document is None:
             abort(404)
         try:
@@ -183,9 +207,34 @@ def create_app(overrides: dict | None = None) -> Flask:
         return send_file(
             source_path,
             mimetype=mimetypes.guess_type(source_path.name)[0] or "application/octet-stream",
-            as_attachment=False,
+            as_attachment=request.args.get("download") == "1",
             download_name=source_path.name,
         )
+
+    @app.route("/api/documents/<doc_id>/preview", methods=["GET"])
+    def get_preview(doc_id: str):
+        document = _document(settings, doc_id)
+        if document is None:
+            abort(404)
+        try:
+            source_path = attachment_path(settings.data_dir, document["path"])
+        except FileNotFoundError:
+            abort(404)
+        return jsonify(preview_document(source_path, document, settings.derived_dir))
+
+    @app.route("/api/documents/<doc_id>/pages/<int:page_number>.png", methods=["GET"])
+    def get_pdf_page(doc_id: str, page_number: int):
+        document = _document(settings, doc_id)
+        if document is None or document["ext"].lower() != ".pdf":
+            abort(404)
+        try:
+            source_path = attachment_path(settings.data_dir, document["path"])
+        except FileNotFoundError:
+            abort(404)
+        image_path = rendered_pdf_page(source_path, document, settings.derived_dir, page_number)
+        if image_path is None:
+            abort(404)
+        return send_file(image_path, mimetype="image/png", conditional=True)
 
     return app
 

@@ -18,6 +18,7 @@ def _project_path(value: str | Path) -> Path:
 class Settings:
     data_dir: Path
     database_path: Path
+    derived_dir: Path
 
 
 def settings_from_env(overrides: dict | None = None) -> Settings:
@@ -29,4 +30,8 @@ def settings_from_env(overrides: dict | None = None) -> Settings:
     database_path = Path(overrides.get("DATABASE_PATH", derived_dir / "sdoc.sqlite3"))
     if not database_path.is_absolute():
         database_path = _project_path(database_path)
-    return Settings(data_dir=data_dir.resolve(), database_path=database_path.resolve())
+    return Settings(
+        data_dir=data_dir.resolve(),
+        database_path=database_path.resolve(),
+        derived_dir=derived_dir.resolve(),
+    )

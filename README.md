@@ -38,7 +38,7 @@ Use the exact Python and Node versions above. `uv.lock`, `requirements.txt`, `.n
 
 If GNU Make is available, use `make backend`, `make frontend`, `make pipeline`, `make reset`, `make inspect`, or `make test`. The direct commands above are the Windows-native equivalents.
 
-## Phase 1 data layer
+## Phases 1–3: data, dashboard, and attachment views
 
 The backend indexes only email metadata and attachment metadata in `backend/derived/sdoc.sqlite3`; attachment bytes remain in `data/attachments/`. The ingest step is idempotent:
 
@@ -50,7 +50,11 @@ uv run python scripts/inspect_dataset.py
 
 From the `backend/` directory, the roadmap command is also available as `python -m app.pipeline.ingest --reset`.
 
-The read API is available at `/api/health`, `/api/emails`, `/api/emails/{email_id}`, `/api/emails/{email_id}/documents`, and `/api/documents/{doc_id}/original`. `/api/emails` returns a JSON array (520 records by default), with `X-Total-Count`, `X-Page`, and `X-Page-Size` pagination headers. It accepts `category`, `status`, `q`, `page`, and `page_size` query parameters.
+The Vite dashboard is now an inbox and attachment viewer. Select an attachment to open its default formatted label/value table or its original view. Text uses a raw text view; spreadsheets and Word files use safe, read-only grids; PDFs render cached PNG page images. Corrupt PDFs show a downloadable error card.
+
+The read API is available at `/api/health`, `/api/emails`, `/api/emails/{email_id}`, `/api/emails/{email_id}/documents`, `/api/documents/{doc_id}/original`, `/api/documents/{doc_id}/preview`, and `/api/documents/{doc_id}/pages/{page}.png`. `/api/emails` returns a JSON array (520 records by default), with `X-Total-Count`, `X-Page`, and `X-Page-Size` pagination headers. It accepts `category`, `status`, `q`, `page`, and `page_size` query parameters.
+
+Run the complete attachment-preview smoke test with `uv run --locked python scripts/verify_previews.py` (or `make previews`). It requests all 250 previews, checks the two known corrupt PDFs, and confirms scans expose a rendered page image.
 
 ## Dataset policy
 

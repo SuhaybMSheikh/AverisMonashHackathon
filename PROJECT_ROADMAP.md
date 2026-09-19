@@ -291,14 +291,14 @@ These were observed by inspecting the participant bundle, not taken from any ans
 
 **Tasks**
 
-- [ ] **[P0]** Create the repo with the layout in section 6. Add `.gitignore` for `derived/`, `.env`, `node_modules/`, `*.db`.
-- [ ] **[P0]** Unzip `sdoc-hackathon-bundle.zip` into `data/`. Treat `data/` as read-only. (ignore)
-- [ ] **[P0]** **Answer-key policy.** The Docker zip is the organizers' package and contains `data_v2/ground_truth.json` and the data-generator scripts. Do **not** open, copy or tune against them. Tell the organizers the key was included. Use the server only through `POST /submit` (see Phase 12).
-- [ ] **[P0]** Create `.env.example` with `GEMINI_API_KEY`, `DATA_DIR`, `DERIVED_DIR`. Never commit real keys.
-- [ ] **[P0]** Pick one Python version and one Node version; pin dependencies (`requirements.txt`, `package.json`).
-- [ ] **[P1]** Add a `Makefile` (or `justfile`) with `make backend`, `make frontend`, `make pipeline`, `make test`.
-- [ ] **[P1]** Agree on a branching and review routine (short-lived branches, one reviewer per PR).
-- [ ] **[P1]** Confirm the free-tier Gemini limits in AI Studio for the model you will use (they vary per model and project and change over time).
+- [x] **[P0]** Create the repo with the layout in section 6. Add `.gitignore` for `derived/`, `.env`, `node_modules/`, `*.db`.
+- [x] **[P0]** Unzip `sdoc-hackathon-bundle.zip` into `data/`. Treat `data/` as read-only. (ignore)
+- [x] **[P0]** **Answer-key policy.** The Docker zip is the organizers' package and contains `data_v2/ground_truth.json` and the data-generator scripts. Do **not** open, copy or tune against them. Tell the organizers the key was included. Use the server only through `POST /submit` (see Phase 12).
+- [x] **[P0]** Create `.env.example` with `GEMINI_API_KEY`, `DATA_DIR`, `DERIVED_DIR`. Never commit real keys.
+- [x] **[P0]** Pick one Python version and one Node version; pin dependencies (`requirements.txt`, `package.json`).
+- [x] **[P1]** Add a `Makefile` (or `justfile`) with `make backend`, `make frontend`, `make pipeline`, `make test`.
+- [x] **[P1]** Agree on a branching and review routine (short-lived branches, one reviewer per PR).
+- [x] **[P1]** Confirm the free-tier Gemini limits in AI Studio for the model you will use (they vary per model and project and change over time).
 
 **Deliverables:** runnable repo skeleton, `.env.example`, README with run instructions.
 
@@ -312,17 +312,17 @@ These were observed by inspecting the participant bundle, not taken from any ans
 
 **Tasks**
 
-- [ ] **[P0]** Copy `loader.py` from the bundle into `backend/app/` (or import it). It supports a local folder or the HTTP server with the same API: `Inbox(path).emails()`, `.read_text()`, `.read_bytes()`.
-- [ ] **[P0]** Write `pipeline/ingest.py`:
+- [x] **[P0]** Copy `loader.py` from the bundle into `backend/app/` (or import it). It supports a local folder or the HTTP server with the same API: `Inbox(path).emails()`, `.read_text()`, `.read_bytes()`.
+- [x] **[P0]** Write `pipeline/ingest.py`:
   - iterate `inbox/email_*.json`;
   - for each attachment path, record `email_id`, `path`, `extension`, `size`, `sha256`, and a **role guess** from the filename suffix (`_SI` / `_BL`) as a *hint only*;
   - upsert into SQLite (`emails`, `documents` tables, Appendix E).
-- [ ] **[P0]** Build the API endpoints (Appendix E): `GET /api/health`, `GET /api/emails`, `GET /api/emails/{id}`, `GET /api/emails/{id}/documents`, `GET /api/documents/{doc_id}/original`.
+- [x] **[P0]** Build the API endpoints (Appendix E): `GET /api/health`, `GET /api/emails`, `GET /api/emails/{id}`, `GET /api/emails/{id}/documents`, `GET /api/documents/{doc_id}/original`.
   - `GET /api/emails` supports `?category=`, `?status=`, `?q=` (search subject/body/sender), pagination, and returns `from`, `subject`, a body snippet, attachment count and formats.
   - Until Phase 5, every email has `category = "UNCLASSIFIED"`.
-- [ ] **[P0]** Path safety: serve attachments only from inside `data/attachments/` (resolve and check the path, as the organizers' server does).
-- [ ] **[P1]** Write `scripts/inspect_dataset.py` that prints the dataset facts in section 7 (counts by format, pair types, emails without attachments). Re-run it whenever you doubt an assumption.
-- [ ] **[P1]** Reset command: `python -m app.pipeline.ingest --reset` rebuilds the database from the files in seconds.
+- [x] **[P0]** Path safety: serve attachments only from inside `data/attachments/` (resolve and check the path, as the organizers' server does).
+- [x] **[P1]** Write `scripts/inspect_dataset.py` that prints the dataset facts in section 7 (counts by format, pair types, emails without attachments). Re-run it whenever you doubt an assumption.
+- [x] **[P1]** Reset command: `python -m app.pipeline.ingest --reset` rebuilds the database from the files in seconds.
 
 **Deliverables:** SQLite database populated with 520 emails and 250 documents; working read API.
 
@@ -355,19 +355,21 @@ These were observed by inspecting the participant bundle, not taken from any ans
 
 **Tasks**
 
-- [ ] **[P0]** Scaffold the frontend (Vite + React + TypeScript + Tailwind). Add a typed API client.
-- [ ] **[P0]** `Sidebar`: sections with live counts from `GET /api/emails/counts`. Sub-filters under BL comparison (Mismatch / Needs review / OK). For now show only "All" with real data and the other entries as disabled placeholders.
-- [ ] **[P0]** `EmailList` with `EmailCard`: sender, subject, 2-line snippet, attachment icons by format, and a category badge slot. Virtualize or paginate the list (520 items).
-- [ ] **[P0]** `EmailDetail`: header (from, subject, id), body rendered as **escaped plain text** (never `dangerouslySetInnerHTML`), and an attachments area listing filenames (contents come in Phase 3).
-- [ ] **[P0]** Routing: `/`, `/category/:name`, `/email/:id`. The URL should deep-link to an email.
-- [ ] **[P1]** Search box and keyboard navigation (up/down through the list, `Esc` to close).
-- [ ] **[P1]** Empty, loading and error states for every panel.
-- [ ] **[P1]** Dark/light theme via CSS variables (cheap and looks polished in a demo).
-- [ ] **[P1]** Define the status colors once as design tokens: `OK` = none, `MISMATCH` = light red, `NEEDS_REVIEW` = amber. Always pair color with a **text badge** so it is readable without color.
+- [x] **[P0]** Scaffold the frontend (Vite + React + TypeScript + Tailwind). Add a typed API client.
+- [x] **[P0]** `Sidebar`: sections with live counts from `GET /api/emails/counts`. Sub-filters under BL comparison (Mismatch / Needs review / OK). For now show only "All" with real data and the other entries as disabled placeholders.
+- [x] **[P0]** `EmailList` with `EmailCard`: sender, subject, 2-line snippet, attachment icons by format, and a category badge slot. Virtualize or paginate the list (520 items).
+- [x] **[P0]** `EmailDetail`: header (from, subject, id), body rendered as **escaped plain text** (never `dangerouslySetInnerHTML`), and an attachments area listing filenames (contents come in Phase 3).
+- [x] **[P0]** Routing: `/`, `/category/:name`, `/email/:id`. The URL should deep-link to an email.
+- [x] **[P1]** Search box and keyboard navigation (up/down through the list, `Esc` to close).
+- [x] **[P1]** Empty, loading and error states for every panel.
+- [x] **[P1]** Dark/light theme via CSS variables (cheap and looks polished in a demo).
+- [x] **[P1]** Define the status colors once as design tokens: `OK` = none, `MISMATCH` = light red, `NEEDS_REVIEW` = amber. Always pair color with a **text badge** so it is readable without color.
 
 **Deliverables:** running site listing all 520 emails, with an email viewer.
 
 **DoD:** open the site, scroll the list, click any email, and see its sender, subject and body. Reload on `/email/email_004` and land in the same place.
+
+**What changed (2026-09-19):** replaced the temporary frontend server with Vite, React, TypeScript, and Tailwind. Added a typed client, live sidebar counts, 50-email pagination, search, deep links, keyboard navigation, safe plain-text email viewing, attachment filename lists, responsive layout, theme variables, and accessible status text badges.
 
 **Notes:** security starts here. Email bodies come from an untrusted inbox (phishing text, URLs). Render as text, and in the Spam section disable link clicking (Phase 10).
 
@@ -393,19 +395,21 @@ These were observed by inspecting the participant bundle, not taken from any ans
 
 **Tasks**
 
-- [ ] **[P0]** `DocPanel` component with tabs (Formatted / Original) and a header showing the filename, format, size and role hint (SI/BL).
-- [ ] **[P0]** Endpoint `GET /api/documents/{id}/preview` returning a JSON preview: for text-like formats a list of `{label, value}` rows; for PDFs a list of page image URLs.
-- [ ] **[P0]** Server-side page rendering for PDFs into `derived/pages/{doc_id}/page-N.png` at about 150 dpi (cache; render once).
-- [ ] **[P0]** Detect corrupt or unreadable files during preview generation and return a structured error (`{"error": "unreadable", "detail": "..."}`) instead of a 500.
-- [ ] **[P1]** `mammoth`/`openpyxl` HTML renders sanitized before sending to the browser.
-- [ ] **[P1]** Two documents in one email are shown as tabs or stacked; a "Compare" view arrives in Phase 8.
-- [ ] **[P1]** Show file metadata: sheet name for xlsx, table count for docx, page count and "text layer / scan / corrupt" classification for PDFs.
+- [x] **[P0]** `DocPanel` component with tabs (Formatted / Original) and a header showing the filename, format, size and role hint (SI/BL).
+- [x] **[P0]** Endpoint `GET /api/documents/{id}/preview` returning a JSON preview: for text-like formats a list of `{label, value}` rows; for PDFs a list of page image URLs.
+- [x] **[P0]** Server-side page rendering for PDFs into `derived/pages/{doc_id}/page-N.png` at about 150 dpi (cache; render once).
+- [x] **[P0]** Detect corrupt or unreadable files during preview generation and return a structured error (`{"error": "unreadable", "detail": "..."}`) instead of a 500.
+- [x] **[P1]** `mammoth`/`openpyxl` HTML renders sanitized before sending to the browser.
+- [x] **[P1]** Two documents in one email are shown as tabs or stacked; a "Compare" view arrives in Phase 8.
+- [x] **[P1]** Show file metadata: sheet name for xlsx, table count for docx, page count and "text layer / scan / corrupt" classification for PDFs.
 
 **Deliverables:** every one of the 250 attachments opens on the site without crashing.
 
 **DoD:** script that requests the preview for all 250 documents produces zero server errors; the two known-corrupt PDFs show the error card; the scans show page images.
 
 **Notes:** this is where mixed-format emails (xlsx + docx) become visible. Check `email_055` (xlsx SI + docx BL) and `email_005` (xlsx + xlsx) manually.
+
+**What changed (2026-09-19):** added a safe `DocPanel`, a structured preview API, 150 dpi cached PDF page images, and a whole-dataset preview verifier. Spreadsheet and Word previews return escaped structured content for React to render rather than source HTML. The verifier confirms all 250 previews return successfully, including error cards for `email_511_BL` and `email_515_BL`.
 
 ---
 

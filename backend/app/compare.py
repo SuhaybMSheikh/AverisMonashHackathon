@@ -9,11 +9,12 @@ from difflib import SequenceMatcher
 from .db import database, initialize
 from .extract.aliases import FIELDS
 from .normalize import normalize
+from .normalize.parties import split_party
 
 
 CONFIDENCE_THRESHOLD = 0.75
-PORT_CODE = re.compile(r"\(([A-Z]{2}[A-Z0-9]{3})\)\s*$", re.IGNORECASE)
 SEVERITY = {field: "high" for field in FIELDS}
+PARTY_FIELDS = frozenset({"shipper", "consignee", "notify_party"})
 
 
 def _row(row):
@@ -21,18 +22,37 @@ def _row(row):
 
 
 def _ports_equal(left: dict, right: dict) -> bool:
-    """Compare port names plus UN/LOCODE when both documents provide one."""
-    if left["normalized"] != right["normalized"]:
-        return False
-    left_code = PORT_CODE.search(left["raw"] or "")
-    right_code = PORT_CODE.search(right["raw"] or "")
-    return not (left_code and right_code and left_code.group(1).upper() != right_code.group(1).upper())
+    """Compare normalized port names; bracketed UN/LOCODEs are ignored."""
+    return left["normalized"] == right["normalized"]
+
+
+def _party_comparison(left: dict, right: dict) -> tuple[bool, str | None]:
+    """Compare party names, requiring address equality only when both are present."""
+    left_name, left_address = split_party(left.get("raw"))
+    right_name, right_address = split_party(right.get("raw"))
+    if left_name != right_name:
+        return False, None
+    if left_address and right_address and left_address != right_address:
+        return False, None
+    if left_address and not right_address:
+        return True, "SI has an additional address; normalized party names match."
+    if right_address and not left_address:
+        return True, "BL has an additional address; normalized party names match."
+    return True, None
+
+
+def _comparison(field: str, left: dict | None, right: dict | None) -> tuple[bool, str | None]:
+    if not left or not right:
+        return False, None
+    if field in PARTY_FIELDS:
+        return _party_comparison(left, right)
+    if field in {"port_of_loading", "port_of_discharge"}:
+        return _ports_equal(left, right), None
+    return left["normalized"] == right["normalized"], None
 
 
 def _equal(field: str, left: dict | None, right: dict | None) -> bool:
-    if not left or not right:
-        return False
-    return _ports_equal(left, right) if field in {"port_of_loading", "port_of_discharge"} else left["normalized"] == right["normalized"]
+    return _comparison(field, left, right)[0]
 
 
 def _explanation(item: dict) -> str:
@@ -132,10 +152,20 @@ def _overlay_extractions(rows: list[dict], documents: list[dict], reviews: dict[
     return overlaid
 
 
+def _is_no_attachment_draft_request(email: dict, documents: list[dict]) -> bool:
+    if email["category"] != "BL_COMPARISON" or documents:
+        return False
+    try:
+        reasons = json.loads(email.get("category_reasons") or "[]")
+    except json.JSONDecodeError:
+        return False
+    return "draft_bl_request_without_attachment" in reasons
+
+
 def compare_email(settings, email_id: str) -> dict:
     initialize(settings.database_path)
     with database(settings.database_path) as connection:
-        email = _row(connection.execute("SELECT category FROM emails WHERE email_id = ?", (email_id,)).fetchone())
+        email = _row(connection.execute("SELECT category, category_reasons FROM emails WHERE email_id = ?", (email_id,)).fetchone())
         documents = [dict(row) for row in connection.execute("SELECT * FROM documents WHERE email_id = ? ORDER BY doc_id", (email_id,))]
         extraction_rows = [dict(row) for row in connection.execute("SELECT e.* FROM extractions e JOIN documents d ON d.doc_id=e.doc_id WHERE d.email_id=?", (email_id,))]
         latest_reviews, review_history = _latest_reviews(connection, email_id)
@@ -151,6 +181,8 @@ def compare_email(settings, email_id: str) -> dict:
         status = "OK"
     elif forced_unreadable:
         status, reason = "NEEDS_REVIEW", "unreadable"
+    elif _is_no_attachment_draft_request(email, documents):
+        status = "OK"
     elif len(si) != 1 or len(bl) != 1 or any(str(doc.get("sha256", "")).startswith("missing:") for doc in (*si, *bl)):
         status, reason = "NEEDS_REVIEW", "missing_attachment"
     elif any(doc["convert_status"] == "failed" for doc in (*si, *bl)):
@@ -174,9 +206,9 @@ def compare_email(settings, email_id: str) -> dict:
     for field in FIELDS:
         left = by_doc.get((si[0]["doc_id"], field)) if si else None
         right = by_doc.get((bl[0]["doc_id"], field)) if bl else None
-        equal = _equal(field, left, right)
+        equal, informational_note = _comparison(field, left, right)
         kind = "equal" if equal and left["raw"] == right["raw"] else ("format_only" if equal else "value")
-        results.append({"field": field, "si_raw": left and left["raw"], "bl_raw": right and right["raw"], "si_norm": left and left["normalized"], "bl_norm": right and right["normalized"], "equal": equal, "diff_kind": kind, "confidence": min(left["confidence"], right["confidence"]) if left and right else 0.0, "severity": SEVERITY[field], "si_reviewed": bool(left and left.get("reviewed")), "bl_reviewed": bool(right and right.get("reviewed")), "si_original_raw": left and left.get("original_raw"), "bl_original_raw": right and right.get("original_raw"), "bl_diff_segments": _diff_segments(left and left["raw"], right and right["raw"]) if not equal else [], "review_side": _review_side(field, left, right, si, bl, reason, latest_reviews) if status == "NEEDS_REVIEW" else None})
+        results.append({"field": field, "si_raw": left and left["raw"], "bl_raw": right and right["raw"], "si_norm": left and left["normalized"], "bl_norm": right and right["normalized"], "equal": equal, "diff_kind": kind, "confidence": min(left["confidence"], right["confidence"]) if left and right else 0.0, "severity": SEVERITY[field], "si_reviewed": bool(left and left.get("reviewed")), "bl_reviewed": bool(right and right.get("reviewed")), "si_original_raw": left and left.get("original_raw"), "bl_original_raw": right and right.get("original_raw"), "bl_diff_segments": _diff_segments(left and left["raw"], right and right["raw"]) if not equal else [], "review_side": _review_side(field, left, right, si, bl, reason, latest_reviews) if status == "NEEDS_REVIEW" else None, "informational_note": informational_note})
     defects = [item["field"] for item in results if not item["equal"]] if status == "MISMATCH" else []
     explanations = [_explanation(item) for item in results if item["field"] in defects] or (["No mismatch detected"] if status == "OK" else [])
     result = {"email_id": email_id, "status": status, "review_reason": reason, "has_defect": bool(defects), "defect_fields": defects, "field_results": results, "explanations": explanations, "reviews": review_history}

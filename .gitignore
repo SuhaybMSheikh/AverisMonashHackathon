@@ -31,3 +31,5 @@ coverage/
 .vscode/
 .DS_Store
 Thumbs.db
+
+sdoc-hackathon-docker/

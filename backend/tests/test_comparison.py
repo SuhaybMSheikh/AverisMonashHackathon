@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
 
 from backend.app.classify.pipeline import classify_all
-from backend.app.compare import _diff_segments, _ports_equal, compare_all, compare_email
+from backend.app.compare import _diff_segments, _party_comparison, _ports_equal, compare_all, compare_email
 from backend.app.config import PROJECT_ROOT, settings_from_env
 from backend.app.db import database, initialize
 from backend.app.extract.aliases import FIELDS
@@ -46,10 +47,18 @@ class ComparisonTests(unittest.TestCase):
         rank = {"MISMATCH": 0, "NEEDS_REVIEW": 1, "OK": 2, None: 3}
         self.assertEqual(sorted(rank[row["status"]] for row in response.get_json()), [rank[row["status"]] for row in response.get_json()])
 
-    def test_port_codes_must_match_when_both_are_present(self):
+    def test_ports_compare_names_and_ignore_unlocodes(self):
         left = {"normalized": "NANTONG CHINA", "raw": "NANTONG, CHINA (CNNTG)"}
         right = {"normalized": "NANTONG CHINA", "raw": "NANTONG CHINA (CNSHA)"}
-        self.assertFalse(_ports_equal(left, right))
+        self.assertTrue(_ports_equal(left, right))
+        self.assertFalse(_ports_equal(left, {"normalized": "SHANGHAI CHINA", "raw": "SHANGHAI, CHINA (CNSHA)"}))
+
+    def test_party_name_and_address_policy(self):
+        left = {"raw": "EXAMPLE TRADING CO\n12 HARBOUR ROAD", "normalized": "EXAMPLE TRADING CO 12 HARBOUR ROAD"}
+        right = {"raw": "EXAMPLE TRADING CO", "normalized": "EXAMPLE TRADING CO"}
+        self.assertEqual((True, "SI has an additional address; normalized party names match."), _party_comparison(left, right))
+        self.assertEqual((False, None), _party_comparison(left, {"raw": "EXAMPLE TRADING CO\n99 RIVER ROAD", "normalized": "EXAMPLE TRADING CO 99 RIVER ROAD"}))
+        self.assertEqual((False, None), _party_comparison(left, {"raw": "OTHER TRADING CO\n12 HARBOUR ROAD", "normalized": "OTHER TRADING CO 12 HARBOUR ROAD"}))
 
     def test_token_diff_keeps_unchanged_numeric_suffixes(self):
         self.assertEqual(
@@ -70,9 +79,9 @@ class ComparisonTests(unittest.TestCase):
             settings = settings_from_env({"DATABASE_PATH": Path(directory) / "status.sqlite3"})
             initialize(settings.database_path)
 
-            def make_case(email_id, *, category="BL_COMPARISON", documents=2, failed=False, rows=True, blank=False, low_confidence=False):
+            def make_case(email_id, *, category="BL_COMPARISON", category_reasons=None, documents=2, failed=False, rows=True, blank=False, low_confidence=False):
                 with database(settings.database_path) as connection:
-                    connection.execute("INSERT INTO emails (email_id, from_addr, subject, body, category) VALUES (?, 'a@b.test', '', '', ?)", (email_id, category))
+                    connection.execute("INSERT INTO emails (email_id, from_addr, subject, body, category, category_reasons) VALUES (?, 'a@b.test', '', '', ?, ?)", (email_id, category, category_reasons))
                     for role in ("SI", "BL")[:documents]:
                         doc_id = f"{email_id}_{role}"
                         connection.execute("INSERT INTO documents (doc_id, email_id, path, ext, size, sha256, role_detected, convert_status) VALUES (?, ?, ?, '.txt', 1, 'x', ?, ?)", (doc_id, email_id, f"attachments/{doc_id}.txt", role, "failed" if failed else "ok"))
@@ -84,6 +93,7 @@ class ComparisonTests(unittest.TestCase):
                             connection.executemany("INSERT INTO extractions (doc_id, field, raw, normalized, line_no, confidence, status) VALUES (?, ?, ?, ?, ?, ?, ?)", values)
 
             make_case("not-comparison", category="GENERAL", documents=0)
+            make_case("draft-request", documents=0, category_reasons=json.dumps(["draft_bl_request_without_attachment"]))
             make_case("missing-attachment", documents=1)
             make_case("unreadable", failed=True)
             make_case("wrong-document-type", rows=False)
@@ -91,6 +101,7 @@ class ComparisonTests(unittest.TestCase):
             make_case("low-confidence", low_confidence=True)
             expected = {
                 "not-comparison": ("OK", None),
+                "draft-request": ("OK", None),
                 "missing-attachment": ("NEEDS_REVIEW", "missing_attachment"),
                 "unreadable": ("NEEDS_REVIEW", "unreadable"),
                 "wrong-document-type": ("NEEDS_REVIEW", "wrong_doc_type"),

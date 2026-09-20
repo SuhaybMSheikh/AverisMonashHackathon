@@ -785,16 +785,16 @@ The brief requires that when a document is unreadable or a value is missing, a p
 
 ### 12.2 Measure yourselves (no answer key)
 
-- [ ] **[P0]** **Dev set:** hand-label 40 to 60 emails, stratified across categories and all traps (each format, missing attachment, corrupt PDF, scan, subject mismatch, spam). Two people label independently on an overlap subset and reconcile. Store in `dev_labels/dev_labels.json` with a one-line evidence note per label.
+- [X] **[P0]** **Dev set:** hand-label 40 to 60 emails, stratified across categories and all traps (each format, missing attachment, corrupt PDF, scan, subject mismatch, spam). Two people label independently on an overlap subset and reconcile. Store in `dev_labels/dev_labels.json` with a one-line evidence note per label.
 - [X] **[P0]** `scripts/eval_dev.py` computes: category confusion matrix, per-class F1, macro-F1, defect precision/recall/F1, exact field-set match, end-to-end rate, escalation precision/recall. The formulas are in the provided `scoring.py` (weights 0.3 / 0.2 / 0.5); you may reuse that module against your own dev labels.
-- [ ] **[P1]** Error-analysis log: for each dev-set miss, the cause (converter, alias, normalization, classification rule, LLM) and the fix.
+- [X] **[P1]** Error-analysis log: for each dev-set miss, the cause (converter, alias, normalization, classification rule, LLM) and the fix.
 
 ### 12.3 Use `/submit` responsibly
 
-- [ ] **[P0]** After each meaningful change, submit through `Inbox("http://localhost:8080").submit(...)` (or `POST /submit`) and log the score, the date and the change in `docs/score_log.md`.
-- [ ] **[P0]** If the result disagrees with your dev expectations, **read the source documents before changing your decision**. If your decision is reasonable, keep it and record the reason.
-- [ ] **[P0]** Do **not** flip single emails to probe the scorer, and do not tune to the scoreboard. It is a sanity check and, as the brief says, not the final assessment.
-- [ ] **[P1]** Look at the reliability axis separately: did you escalate the cases that needed it, and only those?
+- [X] **[P0]** After each meaningful change, submit through `Inbox("http://localhost:8080").submit(...)` (or `POST /submit`) and log the score, the date and the change in `docs/score_log.md`.
+- [X] **[P0]** If the result disagrees with your dev expectations, **read the source documents before changing your decision**. If your decision is reasonable, keep it and record the reason. Round 2 agreed with the current dev signal, so no post-score decision changes were made.
+- [X] **[P0]** Do **not** flip single emails to probe the scorer, and do not tune to the scoreboard. It is a sanity check and, as the brief says, not the final assessment.
+- [X] **[P1]** Look at the reliability axis separately: did you escalate the cases that needed it, and only those?
 
 **Deliverables:** `submission.json` generator and validator; dev set; evaluation script; score log.
 

@@ -1,0 +1,299 @@
+{
+    "email_264": {
+      "category": "SI_REQUEST",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Shipping instructions for 5ALT-11080 are in the body, including BUATAN to YANGON, shipper, consignee and cargo details; requests the draft BL once available."
+    },
+    "email_246": {
+      "category": "SI_REQUEST",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Provides shipping instructions for 5RVN-05452 from SINGAPORE to AQABA, with BALL & DOGGETT AUSTRALIA PTY LTD as consignee; asks for the draft BL."
+    },
+    "email_137": {
+      "category": "SI_REQUEST",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Provides shipping instructions for 5RCY-92995 from NHAVA SHEVA to GDANSK, including 5X40'HC and 104,015 KG; requests the draft BL once available."
+    },
+    "email_353": {
+      "category": "SI_REQUEST",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Shipping instructions for 5RSG-67320 are typed in the body, with CLIFFORD PAPER INC as consignee and PYEONGTAEK as POD; asks for the draft BL."
+    },
+    "email_331": {
+      "category": "INVOICE_QUERY",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Asks to confirm D&D / detention charges for MSDUL0942512091 before payment is released."
+    },
+    "email_298": {
+      "category": "INVOICE_QUERY",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Requests cancellation of invoice 5250070303 for PACIFIC OFFICE (M) SDN BHD and reversal of the PGI because the booking was amended."
+    },
+    "email_406": {
+      "category": "INVOICE_QUERY",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Requests cancellation of invoice 5250073257 for TOPKOPY MIDDLE EAST FZE and reversal of the PGI because the booking was amended."
+    },
+    "email_316": {
+      "category": "INVOICE_QUERY",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Asks whether THC / local charges are included in invoice 5250076501 or billed separately and requests a breakdown."
+    },
+    "email_325": {
+      "category": "GENERAL",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Routine vessel update for PACIFIC SUN 1 V.251073E: loading is completed and documents will follow."
+    },
+    "email_418": {
+      "category": "GENERAL",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Routine daily berthing notice stating that LE HAVRE V.QI540A berthed on schedule."
+    },
+    "email_333": {
+      "category": "GENERAL",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Although the subject mentions outstanding BLs, the body is a New Year greeting and an office reopening notice for 2 January."
+    },
+    "email_222": {
+      "category": "SPAM",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Unsolicited promotion offering 90% off logistics software with urgent buy-now language, sent from support@webmail-verify.co."
+    },
+    "email_345": {
+      "category": "SPAM",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Claims to be a bank officer with a USD 4.5 million proposal and asks the recipient to reply with bank details."
+    },
+    "email_134": {
+      "category": "SPAM",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Claims a parcel requires a $2.99 customs payment within 24 hours and directs the recipient to track-parcel.info."
+    },
+    "email_015": {
+      "category": "SPAM",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Claims the mailbox storage limit was exceeded and threatens deactivation unless the recipient verifies the account within 24 hours via webmail-verify.co."
+    },
+    "email_003": {
+      "category": "BL_COMPARISON",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Reply in a 'TO CONFIRM DOCS' thread asking for the draft BL (SIN832764835) to be sent for checking. No attachments and none promised, so nothing to compare and nothing missing. Not SI_REQUEST: no shipping-instruction content in the body. Document-check request, no defect to report."
+    },
+    "email_012": {
+      "category": "GENERAL",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Despite the subject mentioning an SI and AED reminder, the body contains a routine berthing update stating that MMSS 2507 V.257087E berthed on schedule."
+    },
+    "email_018": {
+      "category": "BL_COMPARISON",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Asks for the draft BL (MCLSINJEA2576036) to be sent for checking; quoted line says to follow the previous instruction. No attachments, no SI fields in the body, so not SI_REQUEST. Same document-check follow-up as email_003, nothing to compare yet."
+    },
+    "email_021": {
+      "category": "GENERAL",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Internal reminder from HR/Documentation SLA to submit SI & AED for pending shipments by end of day, pointing to an outstanding list that is not attached. Generic administrative notice with no shipment-specific SI content. The subject is about an unrelated billing process, so it is not decided by the subject."
+    },
+    "email_076": {
+      "category": "GENERAL",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Requests the team to review the attached list of outstanding BLs and take action on the pending documentation items."
+    },
+    "email_001": {
+      "category": "BL_COMPARISON",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "TXT SI and draft BL agree on all seven fields: APRIL FAR EAST (M) SDN BHD; MOORIM SP CO., LTD; UAB NOVAKOPA; PORT KLANG (WESTPORT), MALAYSIA; CALLAO, PERU; 1 container; and 21,577 KG."
+    },
+    "email_004": {
+      "category": "BL_COMPARISON",
+      "status": "MISMATCH",
+      "review_reason": null,
+      "defect_fields": [
+        "consignee",
+        "notify_party"
+      ],
+      "evidence": "TXT SI names EAST BRIGHT FZ-LLC as consignee and notify party, while the draft BL names UAB NOVAKOPA in both fields; the other five fields match."
+    },
+    "email_009": {
+      "category": "BL_COMPARISON",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "TXT SI and draft BL agree on all seven fields, including PACIFIC OFFICE (M) SDN BHD, PORT KLANG to MERSIN, 1 container, and 20,381 KG."
+    },
+    "email_013": {
+      "category": "BL_COMPARISON",
+      "status": "MISMATCH",
+      "review_reason": null,
+      "defect_fields": [
+        "port_of_discharge"
+      ],
+      "evidence": "TXT SI gives MOMBASA, KENYA (KEMBA) as the discharge port, while the draft BL gives TUTICORIN, INDIA with code KEMBA; the other six fields match."
+    },
+    "email_025": {
+      "category": "BL_COMPARISON",
+      "status": "MISMATCH",
+      "review_reason": null,
+      "defect_fields": [
+        "port_of_discharge",
+        "container_count"
+      ],
+      "evidence": "TXT SI gives FREMANTLE, AUSTRALIA and 6 containers, while the draft BL gives BUSAN, SOUTH KOREA and 5 containers; the other five fields match."
+    },
+    "email_005": {
+      "category": "BL_COMPARISON",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "XLSX SI and draft BL agree on all seven fields, including BALL & DOGGETT AUSTRALIA PTY LTD, SINGAPORE to KOPER, 15 containers, and 341,715 KG."
+    },
+    "email_171": {
+      "category": "BL_COMPARISON",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "XLSX SI and draft BL agree on all seven fields, including PACIFIC OFFICE (M) SDN BHD, PORT KLANG to HOUSTON, 6 containers, and 141,918 KG."
+    },
+    "email_243": {
+      "category": "BL_COMPARISON",
+      "status": "MISMATCH",
+      "review_reason": null,
+      "defect_fields": [
+        "port_of_loading",
+        "port_of_discharge"
+      ],
+      "evidence": "XLSX SI gives PORT KLANG (WESTPORT), MALAYSIA to HOUSTON, US, while the draft BL gives RUGAO/NANTONG/SHANGHAI, CHINA to MOMBASA, KENYA; the other five fields match."
+    },
+    "email_055": {
+      "category": "BL_COMPARISON",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "XLSX SI and DOCX draft BL agree on all seven fields, including AL GURG STATIONERY LLC, SINGAPORE to KARACHI, 12 containers, and 243,588 KG."
+    },
+    "email_097": {
+      "category": "BL_COMPARISON",
+      "status": "MISMATCH",
+      "review_reason": null,
+      "defect_fields": [
+        "container_count",
+        "gross_weight_kg"
+      ],
+      "evidence": "XLSX SI gives 10 containers and 216,950 KG, while the DOCX draft BL gives 11 containers and 215,950 KG; the other five fields match."
+    },
+    "email_107": {
+      "category": "BL_COMPARISON",
+      "status": "MISMATCH",
+      "review_reason": null,
+      "defect_fields": [
+        "consignee",
+        "container_count"
+      ],
+      "evidence": "XLSX SI names KTP CO., LTD as consignee and gives 2 containers, while the DOCX draft BL names VITAL SOLUTIONS PTE. LTD. and gives 3 containers; the other five fields match."
+    },
+    "email_059": {
+      "category": "BL_COMPARISON",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Text-layer PDF SI and draft BL agree on all seven fields, including BALL & DOGGETT AUSTRALIA PTY LTD, BUATAN to FREMANTLE, 6 containers, and 131,322 KG."
+    },
+    "email_160": {
+      "category": "BL_COMPARISON",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Text-layer PDF SI and draft BL agree on all seven fields, including KTP CO., LTD, PORT KLANG to APAPA, 1 container, and 23,702 KG."
+    },
+    "email_208": {
+      "category": "BL_COMPARISON",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Text-layer PDF SI and draft BL agree on all seven fields, including CERIEX, RUGAO/NANTONG/SHANGHAI to FREMANTLE, 6 containers, and 143,940 KG."
+    },
+    "email_512": {
+      "category": "BL_COMPARISON",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Visual review of the scan-only SI and draft BL shows all seven fields match: APRIL FAR EAST (M) SDN BHD; AL GURG STATIONERY LLC; AL GURG STATIONERY LLC; NHAVA SHEVA, INDIA; TUTICORIN, INDIA; 6 containers; and 128,544 KG."
+    },
+    "email_513": {
+      "category": "BL_COMPARISON",
+      "status": "OK",
+      "review_reason": null,
+      "defect_fields": [],
+      "evidence": "Visual review of the scan-only SI and draft BL shows all seven fields match: APRIL FINE PAPER TRADING; KPP-ANTALIS (SINGAPORE) PTE. LTD.; EAST BRIGHT FZ-LLC; NHAVA SHEVA, INDIA; VALPARAISO, CHILE; 10 containers; and 237,750 KG."
+    },
+    "email_511": {
+      "category": "BL_COMPARISON",
+      "status": "NEEDS_REVIEW",
+      "review_reason": "unreadable",
+      "defect_fields": [],
+      "evidence": "The SI TXT is readable, but the attached draft BL PDF is corrupt and cannot be parsed, so the seven-field comparison cannot be completed."
+    },
+    "email_515": {
+      "category": "BL_COMPARISON",
+      "status": "NEEDS_REVIEW",
+      "review_reason": "unreadable",
+      "defect_fields": [],
+      "evidence": "The SI TXT is readable, but the attached draft BL PDF is corrupt and cannot be parsed, so the seven-field comparison cannot be completed."
+    },
+    "email_507": {
+      "category": "BL_COMPARISON",
+      "status": "NEEDS_REVIEW",
+      "review_reason": "missing_attachment",
+      "defect_fields": [],
+      "evidence": "The email requests an SI-versus-draft-BL comparison, but only email_507_SI.txt is attached; the draft BL is missing."
+    },
+    "email_509": {
+      "category": "BL_COMPARISON",
+      "status": "NEEDS_REVIEW",
+      "review_reason": "missing_attachment",
+      "defect_fields": [],
+      "evidence": "The email requests an SI-versus-draft-BL comparison, but only email_509_SI.txt is attached; the draft BL is missing."
+    }
+  }  

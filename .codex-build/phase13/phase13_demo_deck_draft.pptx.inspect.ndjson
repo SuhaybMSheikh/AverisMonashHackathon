@@ -1,0 +1,44 @@
+{"kind":"deck","id":"pr/rotbpt","name":"Deck"}
+{"kind":"layout","layoutId":"9d62b1aa-2ace-4e85-a48c-60ce1fa9524c","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"ad0a2e4b-8228-4883-8c06-aa3b1ef36c75","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/ni79wq","slide":1,"title":"Shipping Document","textShapes":3}
+{"kind":"textbox","id":"sh/hgjuhkre","slide":1,"text":"Shipping Document\nVerification","textPreview":"Shipping Document | Verification","textChars":30,"textLines":2,"bbox":[82,165,900,180]}
+{"kind":"textbox","id":"sh/udsb6583","slide":1,"text":"Explainable SI and draft BL checks for a mixed-format inbox","textPreview":"Explainable SI and draft BL checks for a mixed-format inbox","textChars":59,"textLines":1,"bbox":[86,380,920,54]}
+{"kind":"textbox","id":"sh/ve1cfa9o","slide":1,"text":"Averis × Monash Hackathon","textPreview":"Averis × Monash Hackathon","textChars":25,"textLines":1,"bbox":[86,612,520,24]}
+{"kind":"notes","id":"nt/ni79wq","slide":1,"text":"Project overview. Evidence: repository README and PROJECT_ROADMAP.md."}
+{"kind":"slide","id":"sl/uhd58o","slide":2,"title":"AVERIS × MONASH","textShapes":4}
+{"kind":"textbox","id":"sh/n2x4relg","slide":2,"text":"AVERIS × MONASH","textPreview":"AVERIS × MONASH","textChars":15,"textLines":1,"bbox":[72,42,400,28]}
+{"kind":"textbox","id":"sh/8365kjm1","slide":2,"text":"The operational problem","textPreview":"The operational problem","textChars":23,"textLines":1,"bbox":[72,92,1130,72]}
+{"kind":"textbox","id":"sh/94fmto36","slide":2,"text":"Shipping teams receive instructions and draft bills across text, spreadsheets, Word files, PDFs, scans, and email bodies. A missed discrepancy can create downstream rework. The desk makes the decision and its evidence visible.","textPreview":"Shipping teams receive instructions and draft bills across text, spreadsheets, Word files, PDFs, scans, and email bodies. A missed discre...","textChars":226,"textLines":1,"bbox":[78,200,1110,390]}
+{"kind":"textbox","id":"sh/yd43e94j","slide":2,"text":"Shipping Document Verification","textPreview":"Shipping Document Verification","textChars":30,"textLines":1,"bbox":[72,664,420,20]}
+{"kind":"notes","id":"nt/uhd58o","slide":2,"text":"Project framing from PROJECT_ROADMAP.md."}
+{"kind":"slide","id":"sl/dt6wnf","slide":3,"title":"AVERIS × MONASH","textShapes":4}
+{"kind":"textbox","id":"sh/nyl4ru9k","slide":3,"text":"AVERIS × MONASH","textPreview":"AVERIS × MONASH","textChars":15,"textLines":1,"bbox":[72,42,400,28]}
+{"kind":"textbox","id":"sh/ozu5kzq5","slide":3,"text":"Pipeline architecture","textPreview":"Pipeline architecture","textChars":21,"textLines":1,"bbox":[72,92,1130,72]}
+{"kind":"textbox","id":"sh/903mt4rq","slide":3,"text":"Read-only inbox\n↓\nCanonical conversion with content hashes\n↓\nRules-first classification with an optional cached Gemini fallback\n↓\nSeven-field extraction and normalization\n↓\nDeterministic SI versus BL comparison\n↓\nHuman review, audit trail, validated submission, offline snapshot","textPreview":"Read-only inbox | ↓ | Canonical conversion with content hashes | ↓ | Rules-first classification with an optional cached Gemini fallback |...","textChars":278,"textLines":11,"bbox":[78,200,1110,390]}
+{"kind":"textbox","id":"sh/a1wnm98v","slide":3,"text":"Shipping Document Verification","textPreview":"Shipping Document Verification","textChars":30,"textLines":1,"bbox":[72,664,420,20]}
+{"kind":"notes","id":"nt/dt6wnf","slide":3,"text":"Architecture follows README and PROJECT_ROADMAP.md."}
+{"kind":"slide","id":"sl/xvo55y","slide":4,"title":"AVERIS × MONASH","textShapes":4}
+{"kind":"textbox","id":"sh/mtwbupkb","slide":4,"text":"AVERIS × MONASH","textPreview":"AVERIS × MONASH","textChars":15,"textLines":1,"bbox":[72,42,400,28]}
+{"kind":"textbox","id":"sh/9gnu543m","slide":4,"text":"Reliability controls","textPreview":"Reliability controls","textChars":20,"textLines":1,"bbox":[72,92,1130,72]}
+{"kind":"textbox","id":"sh/8fetwz21","slide":4,"text":"Canonical text gives every format one parser. Deterministic comparison avoids model guesswork on material fields. Low confidence, corrupt files, missing attachments, and unknown document roles route to review. The Runs page records failures and offers safe retries.","textPreview":"Canonical text gives every format one parser. Deterministic comparison avoids model guesswork on material fields. Low confidence, corrupt...","textChars":265,"textLines":1,"bbox":[78,200,1110,390]}
+{"kind":"textbox","id":"sh/vi5c7els","slide":4,"text":"Shipping Document Verification","textPreview":"Shipping Document Verification","textChars":30,"textLines":1,"bbox":[72,664,420,20]}
+{"kind":"notes","id":"nt/xvo55y","slide":4,"text":"Evidence: Phase 4, 7, 9, and 11 implementation."}
+{"kind":"slide","id":"sl/4ziz4y","slide":5,"title":"AVERIS × MONASH","textShapes":4}
+{"kind":"textbox","id":"sh/4nedgfal","slide":5,"text":"AVERIS × MONASH","textPreview":"AVERIS × MONASH","textChars":15,"textLines":1,"bbox":[72,42,400,28]}
+{"kind":"textbox","id":"sh/jm5wna90","slide":5,"text":"What the reviewer sees","textPreview":"What the reviewer sees","textChars":22,"textLines":1,"bbox":[72,92,1130,72]}
+{"kind":"textbox","id":"sh/ilwve5sf","slide":5,"text":"Open a BL comparison to inspect seven fixed field rows. The SI stays as the reference. Only the differing BL text receives a highlight. Uncertain cases expose source evidence, reviewer overlays, and an append-only audit trail.","textPreview":"Open a BL comparison to inspect seven fixed field rows. The SI stays as the reference. Only the differing BL text receives a highlight. U...","textChars":226,"textLines":1,"bbox":[78,200,1110,390]}
+{"kind":"textbox","id":"sh/xknel0ru","slide":5,"text":"Shipping Document Verification","textPreview":"Shipping Document Verification","textChars":30,"textLines":1,"bbox":[72,664,420,20]}
+{"kind":"notes","id":"nt/4ziz4y","slide":5,"text":"Evidence: Phase 8 and Phase 9 UI behavior."}
+{"kind":"slide","id":"sl/n7dlas","slide":6,"title":"AVERIS × MONASH","textShapes":4}
+{"kind":"textbox","id":"sh/vydo3up8","slide":6,"text":"AVERIS × MONASH","textPreview":"AVERIS × MONASH","textChars":15,"textLines":1,"bbox":[72,42,400,28]}
+{"kind":"textbox","id":"sh/wzmpwzqt","slide":6,"text":"Evaluation results","textPreview":"Evaluation results","textChars":18,"textLines":1,"bbox":[72,92,1130,72]}
+{"kind":"textbox","id":"sh/x0vq547e","slide":6,"text":"Round 2 organizer submission\nFinal score: 1.000000\nStage 1 accuracy: 1.000000\nStage 3 field F1: 1.000000\nEnd-to-end rate: 1.000000\nEscalation precision: 1.000000\nEscalation recall: 0.850000\n\nThe team used full validated submissions only; no individual-email probing.","textPreview":"Round 2 organizer submission | Final score: 1.000000 | Stage 1 accuracy: 1.000000 | Stage 3 field F1: 1.000000 | End-to-end rate: 1.00000...","textChars":266,"textLines":9,"bbox":[78,200,1110,390]}
+{"kind":"textbox","id":"sh/m947qp8r","slide":6,"text":"Shipping Document Verification","textPreview":"Shipping Document Verification","textChars":30,"textLines":1,"bbox":[72,664,420,20]}
+{"kind":"notes","id":"nt/n7dlas","slide":6,"text":"Metrics: docs/score_log.md and docs/submit_summary.md, 2026-09-20."}
+{"kind":"slide","id":"sl/aa8x7c","slide":7,"title":"AVERIS × MONASH","textShapes":4}
+{"kind":"textbox","id":"sh/210rexc3","slide":7,"text":"AVERIS × MONASH","textPreview":"AVERIS × MONASH","textChars":15,"textLines":1,"bbox":[72,42,400,28]}
+{"kind":"textbox","id":"sh/porq9sbe","slide":7,"text":"Limitations and next steps","textPreview":"Limitations and next steps","textChars":26,"textLines":1,"bbox":[72,92,1130,72]}
+{"kind":"textbox","id":"sh/oni9g7ut","slide":7,"text":"Address comparison follows the documented party-name policy. Scan extraction can remain uncertain and routes to review. Gemini is opt-in and subject to free-tier availability. The demo uses a frozen local snapshot; the team should rehearse the clean-machine workflow before presenting.","textPreview":"Address comparison follows the documented party-name policy. Scan extraction can remain uncertain and routes to review. Gemini is opt-in ...","textChars":285,"textLines":1,"bbox":[78,200,1110,390]}
+{"kind":"textbox","id":"sh/bqt8b2tk","slide":7,"text":"Shipping Document Verification","textPreview":"Shipping Document Verification","textChars":30,"textLines":1,"bbox":[72,664,420,20]}
+{"kind":"notes","id":"nt/aa8x7c","slide":7,"text":"Limitations: docs/phase12_limitations.md. Demo procedure: docs/demo_rehearsal.md."}

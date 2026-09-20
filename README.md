@@ -1,6 +1,6 @@
 # Shipping Document Verification
 
-The Averis × Monash Hackathon project turns a read-only shipping inbox into an explainable discrepancy report. The current repository is at **Phase 0: setup and ground rules**; it has a runnable backend, a minimal frontend server, and the participant bundle arranged for the later pipeline phases.
+The Averis × Monash Hackathon project turns a read-only shipping inbox into an explainable document-verification desk. It classifies each email, converts mixed attachment formats to canonical text, compares Shipping Instructions with draft Bills of Lading, and routes uncertainty to human review.
 
 ## Pinned toolchain
 
@@ -104,6 +104,46 @@ The sidebar supports `Mismatch`, `Needs review`, and `OK` subfilters. The detail
 Confirmed mismatch emails expose a **Send email** action that opens a pre-filled Gmail draft using the sender, original subject, and the persisted mismatch rows. It uses encoded query parameters, never sends automatically, limits the compose URL to roughly 2,000 characters, and offers mail-client and copy-text fallbacks. A `missing_attachment` review case instead exposes a short missing-document request draft.
 
 The **Review queue** lists unresolved comparisons by reason. In a review panel, a reviewer can inspect immutable extraction evidence, confirm or replace an SI/BL field, or record `Cannot determine` / `Unreadable` with a note. `POST /api/emails/{id}/review` appends a review record and recomputes only that email from overlay values; it never changes the original extraction or source attachment. `GET /api/review-queue` and `GET /api/emails/{id}/review-context` support the queue and source-evidence UI. The comparison page retains a visible audit trail with the original extracted value and every reviewer decision.
+
+## Phases 10–13: categories, reliability, evaluation, and demo
+
+Human category overrides stay separate from pipeline output. The Runs page exposes failed or pending stages with safe retry actions. Gemini remains off unless explicitly enabled; cached rule-based results and `DEMO_MODE=1` support an offline demo snapshot.
+
+Build and validate a submission with:
+
+```powershell
+uv run --locked python scripts/build_submission.py
+uv run --locked python scripts/eval_dev.py
+```
+
+Architecture:
+
+```text
+Read-only inbox
+  → ingest metadata and content hashes
+  → convert attachments to canonical text
+  → rules-first classification, optional cached Gemini fallback
+  → extract and normalize seven fields
+  → deterministic SI versus BL comparison
+  → review queue, audit trail, draft-only follow-up
+  → validated submission and frozen demo snapshot
+```
+
+Key decisions and evidence live in [dev_labels/DECISION_LOG.md](dev_labels/DECISION_LOG.md), [docs/error_analysis_round2.md](docs/error_analysis_round2.md), and [docs/score_log.md](docs/score_log.md). Known limitations are in [docs/phase12_limitations.md](docs/phase12_limitations.md).
+
+### Offline demo
+
+Create the snapshot after a full pipeline run:
+
+```powershell
+uv run --locked python -m backend.app.pipeline.runner --all
+uv run --locked python scripts/export_snapshot.py
+$env:DEMO_MODE = "1"
+$env:RESULTS_SNAPSHOT = "results_snapshot.json"
+uv run --locked python app.py
+```
+
+In a second terminal, run `npm --prefix frontend run dev`. The demo sequence is in [docs/showcase_emails.md](docs/showcase_emails.md); the rehearsal sign-off is in [docs/demo_rehearsal.md](docs/demo_rehearsal.md).
 
 ## Dataset policy
 

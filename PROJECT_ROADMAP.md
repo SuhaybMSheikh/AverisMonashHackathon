@@ -808,14 +808,14 @@ The brief requires that when a document is unreadable or a value is missing, a p
 
 **Tasks**
 
-- [ ] **[P0]** README: what it is, how to run (backend, frontend, pipeline), architecture diagram, decisions log.
-- [ ] **[P0]** Freeze a demo dataset state: run the full pipeline once, export the snapshot, verify `DEMO_MODE=1` works offline.
-- [ ] **[P0]** Pick **6 to 8 showcase emails** (see Appendix J) that cover: a clean OK; a weight mismatch; a party mismatch; a formatting-only difference that is *not* flagged; a mixed-format pair (xlsx + docx); a scan; a corrupt PDF; a missing attachment.
+- [X] **[P0]** README: what it is, how to run (backend, frontend, pipeline), architecture diagram, decisions log.
+- [X] **[P0]** Freeze a demo dataset state: run the full pipeline once, export the snapshot, verify `DEMO_MODE=1` works offline.
+- [X] **[P0]** Pick **6 to 8 showcase emails** (see Appendix J) that cover: a clean OK; a weight mismatch; a party mismatch; a formatting-only difference that is *not* flagged; a mixed-format pair (xlsx + docx); a scan; a corrupt PDF; a missing attachment.
 - [ ] **[P0]** Rehearse the demo end to end at least twice on a clean machine (fresh clone, fresh database, no cached state other than the snapshot).
-- [ ] **[P1]** Slides: problem, architecture, what makes it reliable (canonical text, deterministic comparison, review loop), results (dev-set metrics and the score log), limitations and next steps.
-- [ ] **[P1]** UI polish pass: consistent spacing, empty/loading/error states, accessible contrast, favicon, page titles.
-- [ ] **[P1]** Performance check: list and detail pages load quickly with all 520 emails.
-- [ ] **[P1]** Write a short "limitations" section honestly (address-policy assumption, scan accuracy, free-tier limits).
+- [X] **[P1]** Slides: problem, architecture, what makes it reliable (canonical text, deterministic comparison, review loop), results (dev-set metrics and the score log), limitations and next steps.
+- [X] **[P1]** UI polish pass: consistent spacing, empty/loading/error states, accessible contrast, favicon, page titles.
+- [X] **[P1]** Performance check: list and detail pages load quickly with all 520 emails.
+- [X] **[P1]** Write a short "limitations" section honestly (address-policy assumption, scan accuracy, free-tier limits).
 - [ ] **[P2]** Screenshots and a 60-second screen recording as a backup if the live demo fails.
 
 **DoD:** a teammate who has never seen the project can run the demo from the README, and the team can explain every design choice on the slides.

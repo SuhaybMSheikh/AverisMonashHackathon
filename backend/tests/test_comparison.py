@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from backend.app.classify.pipeline import classify_all
-from backend.app.compare import _ports_equal, compare_all, compare_email
+from backend.app.compare import _diff_segments, _ports_equal, compare_all, compare_email
 from backend.app.config import PROJECT_ROOT, settings_from_env
 from backend.app.db import database, initialize
 from backend.app.extract.aliases import FIELDS
@@ -51,6 +51,12 @@ class ComparisonTests(unittest.TestCase):
         right = {"normalized": "NANTONG CHINA", "raw": "NANTONG CHINA (CNSHA)"}
         self.assertFalse(_ports_equal(left, right))
 
+    def test_token_diff_keeps_unchanged_numeric_suffixes(self):
+        self.assertEqual(
+            [{"text": "4", "changed": False}, {"text": "1", "changed": True}, {"text": ",326", "changed": False}],
+            _diff_segments("40,326", "41,326"),
+        )
+
     def test_recomputation_preserves_identical_result_timestamp(self):
         with database(self.settings.database_path) as connection:
             first = connection.execute("SELECT computed_at FROM comparisons WHERE email_id = 'email_031'").fetchone()[0]
@@ -94,6 +100,38 @@ class ComparisonTests(unittest.TestCase):
             for email_id, verdict in expected.items():
                 result = compare_email(settings, email_id)
                 self.assertEqual(verdict, (result["status"], result["review_reason"]))
+
+    def test_review_api_overlays_value_without_mutating_extraction(self):
+        with tempfile.TemporaryDirectory() as directory:
+            settings = settings_from_env({"DATABASE_PATH": Path(directory) / "review.sqlite3", "DATA_DIR": self.settings.data_dir, "DERIVED_DIR": Path(directory) / "derived"})
+            initialize(settings.database_path)
+            with database(settings.database_path) as connection:
+                connection.execute("INSERT INTO emails (email_id, from_addr, subject, body, category) VALUES ('review-case', 'sender@example.test', 'Subject', '', 'BL_COMPARISON')")
+                for role in ("SI", "BL"):
+                    doc_id = f"review-case_{role}"
+                    connection.execute("INSERT INTO documents (doc_id, email_id, path, ext, size, sha256, role_detected, convert_status) VALUES (?, 'review-case', ?, '.txt', 1, 'hash', ?, 'ok')", (doc_id, f"attachments/{doc_id}.txt", role))
+                    for field in FIELDS:
+                        raw, normalized, status = ("VALUE", "VALUE", "found")
+                        if role == "BL" and field == "shipper":
+                            raw, normalized, status = (None, None, "blank")
+                        connection.execute("INSERT INTO extractions (doc_id, field, raw, normalized, line_no, confidence, status) VALUES (?, ?, ?, ?, 1, 1, ?)", (doc_id, field, raw, normalized, status))
+            initial = compare_email(settings, "review-case")
+            self.assertEqual("NEEDS_REVIEW", initial["status"])
+            self.assertEqual("BL", initial["field_results"][0]["review_side"])
+            app = create_app({"DATABASE_PATH": settings.database_path, "DATA_DIR": settings.data_dir, "DERIVED_DIR": settings.derived_dir})
+            client = app.test_client()
+            queue = client.get("/api/review-queue")
+            self.assertEqual(["review-case"], [item["email_id"] for item in queue.get_json()])
+            response = client.post("/api/emails/review-case/review", json={"field": "shipper", "doc_role": "BL", "value": "VALUE", "reviewer": "Ava", "note": "Confirmed against source", "disposition": "confirmed"})
+            self.assertEqual(200, response.status_code)
+            self.assertEqual("OK", response.get_json()["status"])
+            with database(settings.database_path) as connection:
+                original = connection.execute("SELECT raw, status FROM extractions WHERE doc_id = 'review-case_BL' AND field = 'shipper'").fetchone()
+                self.assertEqual((None, "blank"), (original["raw"], original["status"]))
+            comparison = client.get("/api/emails/review-case/comparison").get_json()
+            self.assertEqual("VALUE", comparison["reviews"][-1]["value"])
+            self.assertTrue(comparison["field_results"][0]["bl_reviewed"])
+            self.assertEqual([], client.get("/api/review-queue").get_json())
 
 
 if __name__ == "__main__": unittest.main()

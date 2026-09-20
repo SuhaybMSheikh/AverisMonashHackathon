@@ -10,6 +10,7 @@ from backend.app.db import database
 from backend.app.main import create_app
 from backend.app.pipeline.convert import convert_all
 from backend.app.pipeline.ingest import ingest
+from backend.app.submission import submission_rows
 from scripts.evaluate_classification import report
 
 
@@ -58,6 +59,26 @@ class ClassificationTests(unittest.TestCase):
         item = client.get("/api/emails?category=BL_COMPARISON&page_size=1").get_json()[0]
         self.assertIn("category_conf", item)
         self.assertIn("decided_by", item)
+
+    def test_category_override_and_si_body_fields_are_exposed(self):
+        app = create_app({"DATA_DIR": self.settings.data_dir, "DATABASE_PATH": self.settings.database_path, "DERIVED_DIR": self.settings.derived_dir})
+        client = app.test_client()
+        response = client.post("/api/emails/email_003/category", json={"category": "SPAM"})
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("SPAM", client.get("/api/emails/email_003").get_json()["category"])
+        self.assertEqual("SPAM", client.get("/api/emails?category=SPAM&page_size=520").get_json()[-1]["category"])
+        client.post("/api/emails/email_003/category", json={"category": "GENERAL"})
+        si_email = client.get("/api/emails?category=SI_REQUEST&page_size=1").get_json()[0]
+        fields = client.get(f"/api/emails/{si_email['email_id']}/body-fields")
+        self.assertEqual(200, fields.status_code)
+        self.assertEqual(7, len(fields.get_json()))
+
+    def test_submission_rows_use_category_override(self):
+        app = create_app({"DATA_DIR": self.settings.data_dir, "DATABASE_PATH": self.settings.database_path, "DERIVED_DIR": self.settings.derived_dir})
+        client = app.test_client()
+        client.post("/api/emails/email_003/category", json={"category": "SPAM"})
+        self.assertEqual("SPAM", submission_rows(self.settings.database_path)["email_003"]["category"])
+        client.post("/api/emails/email_003/category", json={"category": "GENERAL"})
 
     def test_team_dev_set_report_is_available(self):
         result = report(PROJECT_ROOT / "dev_labels" / "classification_dev_set.json", self.settings.database_path)

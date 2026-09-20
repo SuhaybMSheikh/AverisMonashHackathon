@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS reviews (
     value TEXT,
     reviewer TEXT,
     note TEXT,
+    disposition TEXT NOT NULL DEFAULT 'confirmed' CHECK(disposition IN ('confirmed', 'cannot_determine', 'unreadable')),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -125,3 +126,8 @@ def initialize(database_path: Path) -> None:
     database_path.parent.mkdir(parents=True, exist_ok=True)
     with database(database_path) as connection:
         connection.executescript(SCHEMA)
+        # Existing Phase 0--8 databases predate the review disposition.  SQLite
+        # cannot add it through CREATE TABLE IF NOT EXISTS, so migrate in place.
+        columns = {row["name"] for row in connection.execute("PRAGMA table_info(reviews)")}
+        if "disposition" not in columns:
+            connection.execute("ALTER TABLE reviews ADD COLUMN disposition TEXT NOT NULL DEFAULT 'confirmed'")

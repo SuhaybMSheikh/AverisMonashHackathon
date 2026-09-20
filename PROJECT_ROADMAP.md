@@ -554,17 +554,17 @@ These were observed by inspecting the participant bundle, not taken from any ans
 
 **Tasks**
 
-- [ ] **[P0]** `extract/parser.py`: parse canonical text into an ordered list of `{label, value, line_no, continuation}` entries (handles the indented continuation line).
-- [ ] **[P0]** `extract/aliases.py`: map labels to canonical fields using the alias table in [Appendix B](#appendix-b--field-aliases). Label matching steps: lowercase, remove CJK characters and empty brackets, strip punctuation, collapse whitespace, look up exact alias, then a fuzzy match above a high threshold.
-- [ ] **[P0]** Handle multi-label lines from text PDFs (`B/L NUMBER: X    BOOKING NO. Y`) only as far as needed; the seven fields never depend on them.
-- [ ] **[P0]** **Weight and containers from PDFs:** prefer the `TOTAL` / `No. of Containers` lines over per-container rows.
-- [ ] **[P0]** Field result object: `{field, raw, normalized, source_doc, line_no, confidence, status}` where `status` is `found`, `missing` (label absent) or `blank` (label present, value empty, `N/A`, `____MT`, or similar placeholder).
-- [ ] **[P0]** `normalize/` modules per [Appendix C](#appendix-c--normalization-and-comparison-rules): parties, ports, containers, weight. Each has unit tests with real examples from the data.
-- [ ] **[P0]** Keep the **extras** (vessel, voyage, booking ref, BL number, HS code, description, freight, container numbers) as display-only fields.
-- [ ] **[P1]** **Gemini fallback** (`extract/gemini_fallback.py`) for labels the alias table cannot resolve: send only the unresolved lines, ask which canonical field (if any) each one is, and cache the answer. Add newly learned aliases to the table so the next run is rule-based.
-- [ ] **[P1]** For scans, merge the two OCR readings (Phase 4) and carry `uncertain_fields` into the field result as `confidence < threshold`.
-- [ ] **[P1]** Coverage report: for all documents, how many of the seven fields were found per format. Missing counts point to converter or alias bugs.
-- [ ] **[P1]** Unknown-label log: every label seen that maps to nothing, with counts, so you can extend the alias table quickly.
+- [X] **[P0]** `extract/parser.py`: parse canonical text into an ordered list of `{label, value, line_no, continuation}` entries (handles the indented continuation line).
+- [X] **[P0]** `extract/aliases.py`: map labels to canonical fields using the alias table in [Appendix B](#appendix-b--field-aliases). Label matching steps: lowercase, remove CJK characters and empty brackets, strip punctuation, collapse whitespace, look up exact alias, then a fuzzy match above a high threshold.
+- [X] **[P0]** Handle multi-label lines from text PDFs (`B/L NUMBER: X    BOOKING NO. Y`) only as far as needed; the seven fields never depend on them.
+- [X] **[P0]** **Weight and containers from PDFs:** prefer the `TOTAL` / `No. of Containers` lines over per-container rows.
+- [X] **[P0]** Field result object: `{field, raw, normalized, source_doc, line_no, confidence, status}` where `status` is `found`, `missing` (label absent) or `blank` (label present, value empty, `N/A`, `____MT`, or similar placeholder).
+- [X] **[P0]** `normalize/` modules per [Appendix C](#appendix-c--normalization-and-comparison-rules): parties, ports, containers, weight. Each has unit tests with real examples from the data.
+- [X] **[P0]** Keep the **extras** (vessel, voyage, booking ref, BL number, HS code, description, freight, container numbers) as display-only fields.
+- [X] **[P1]** **Gemini fallback** (`extract/gemini_fallback.py`) for labels the alias table cannot resolve: send only the unresolved lines, ask which canonical field (if any) each one is, and cache the answer. Add newly learned aliases to the table so the next run is rule-based.
+- [X] **[P1]** For scans, merge the two OCR readings (Phase 4) and carry `uncertain_fields` into the field result as `confidence < threshold`.
+- [X] **[P1]** Coverage report: for all documents, how many of the seven fields were found per format. Missing counts point to converter or alias bugs.
+- [X] **[P1]** Unknown-label log: every label seen that maps to nothing, with counts, so you can extend the alias table quickly.
 
 **Deliverables:** `extractions` table filled for every comparable document; coverage report.
 
@@ -580,17 +580,17 @@ These were observed by inspecting the participant bundle, not taken from any ans
 
 **Tasks**
 
-- [ ] **[P0]** `compare.py`: for each of the seven fields, compare the SI's normalized value with the BL's normalized value using the rules in [Appendix C](#appendix-c--normalization-and-comparison-rules). Output per field: `{field, si_raw, bl_raw, si_norm, bl_norm, equal, diff_kind, confidence}`.
-- [ ] **[P0]** **Status decision** follows [Appendix D](#appendix-d--status-and-review-reason-logic): missing attachment, wrong document type, unreadable, missing value, or uncertain reading all produce `NEEDS_REVIEW` **before** any comparison verdict is given.
-- [ ] **[P0]** `MISMATCH` lists `defect_fields` using the canonical field names, sorted in a fixed order; `has_defect = true`.
-- [ ] **[P0]** `OK` requires all seven fields found, confident and equal. Report the text "No mismatch detected".
-- [ ] **[P0]** **Formatting-only differences are not defects.** Record them as `diff_kind = "format_only"` (for example `341715` vs `341,715 KG`), never in `defect_fields`.
-- [ ] **[P0]** Ignore out-of-scope fields (container numbers, BL number, vessel, booking, HS code, freight) for the verdict. They only appear in the extras.
-- [ ] **[P0]** Persist results in the `comparisons` table; expose through `GET /api/emails/{id}/comparison`.
-- [ ] **[P0]** Runner command `python -m app.pipeline.runner --all` executes convert, classify, extract, compare for every email and persists stage status.
-- [ ] **[P1]** Explanations: for each mismatch produce a one-line human explanation (`Container count differs: SI 3, BL 4`) used by the UI and the Gmail draft.
-- [ ] **[P1]** Severity tag (informational): weight and container count differences are "high", name differences "high", port differences "high". Only used for ordering in the UI.
-- [ ] **[P1]** **Confidence gate:** if a field's extraction confidence is below the threshold (scans), the email goes to `NEEDS_REVIEW` rather than `MISMATCH`, so you never email someone about an OCR error.
+- [X] **[P0]** `compare.py`: for each of the seven fields, compare the SI's normalized value with the BL's normalized value using the rules in [Appendix C](#appendix-c--normalization-and-comparison-rules). Output per field: `{field, si_raw, bl_raw, si_norm, bl_norm, equal, diff_kind, confidence}`.
+- [X] **[P0]** **Status decision** follows [Appendix D](#appendix-d--status-and-review-reason-logic): missing attachment, wrong document type, unreadable, missing value, or uncertain reading all produce `NEEDS_REVIEW` **before** any comparison verdict is given.
+- [X] **[P0]** `MISMATCH` lists `defect_fields` using the canonical field names, sorted in a fixed order; `has_defect = true`.
+- [X] **[P0]** `OK` requires all seven fields found, confident and equal. Report the text "No mismatch detected".
+- [X] **[P0]** **Formatting-only differences are not defects.** Record them as `diff_kind = "format_only"` (for example `341715` vs `341,715 KG`), never in `defect_fields`.
+- [X] **[P0]** Ignore out-of-scope fields (container numbers, BL number, vessel, booking, HS code, freight) for the verdict. They only appear in the extras.
+- [X] **[P0]** Persist results in the `comparisons` table; expose through `GET /api/emails/{id}/comparison`.
+- [X] **[P0]** Runner command `python -m app.pipeline.runner --all` executes convert, classify, extract, compare for every email and persists stage status.
+- [X] **[P1]** Explanations: for each mismatch produce a one-line human explanation (`Container count differs: SI 3, BL 4`) used by the UI and the Gmail draft.
+- [X] **[P1]** Severity tag (informational): weight and container count differences are "high", name differences "high", port differences "high". Only used for ordering in the UI.
+- [X] **[P1]** **Confidence gate:** if a field's extraction confidence is below the threshold (scans), the email goes to `NEEDS_REVIEW` rather than `MISMATCH`, so you never email someone about an OCR error.
 
 **Deliverables:** every comparison email has a stored result; first full `submission.json` can be generated (Phase 12).
 
@@ -606,9 +606,9 @@ These were observed by inspecting the participant bundle, not taken from any ans
 
 ### 8.1 List (cards)
 
-- [ ] **[P0]** Card style by status: `MISMATCH` → light red background with chips naming the fields (e.g. `Container count`, `Gross weight`); `NEEDS_REVIEW` → amber with the reason (`Missing attachment`, `Unreadable`, `Missing value`, `Wrong document type`); `OK` → no highlight, small check mark and "All 7 fields match".
-- [ ] **[P0]** Always show a **text badge** as well as color.
-- [ ] **[P0]** Sidebar sub-filters (Mismatch / Needs review / OK) with counts, and a sort option (mismatches first).
+- [X] **[P0]** Card style by status: `MISMATCH` → light red background with chips naming the fields (e.g. `Container count`, `Gross weight`); `NEEDS_REVIEW` → amber with the reason (`Missing attachment`, `Unreadable`, `Missing value`, `Wrong document type`); `OK` → no highlight, small check mark and "All 7 fields match".
+- [X] **[P0]** Always show a **text badge** as well as color.
+- [X] **[P0]** Sidebar sub-filters (Mismatch / Needs review / OK) with counts, and a sort option (mismatches first).
 
 ### 8.2 Detail page (top to bottom)
 
@@ -629,22 +629,22 @@ Two views, switchable:
 
 **Highlighting rules (BL panel only)**
 
-- [ ] **[P0]** Highlight the BL value of every field in `defect_fields` with a light red background.
-- [ ] **[P0]** **Character/token-level highlight inside the value:** show exactly what differs (e.g. only `41,326` vs `40,326`, or the differing word in a company name). Use `difflib.SequenceMatcher` on case-folded tokens, falling back to a whole-value highlight when the values are entirely different.
-- [ ] **[P0]** Show the SI's expected value in a small caption or tooltip under the highlighted BL value (`SI: 40,326 KG`), because the SI panel itself is not highlighted.
-- [ ] **[P0]** Never highlight formatting-only differences as defects. Optionally show a subtle dotted underline with a tooltip "Same value, different format" (**[P2]**).
-- [ ] **[P0]** `NEEDS_REVIEW` fields get an amber marker on the affected side (the document that is unreadable or missing the value), not red.
-- [ ] **[P0]** Alignment between the SI and BL rows is by **canonical field**, never by line number.
+- [X] **[P0]** Highlight the BL value of every field in `defect_fields` with a light red background.
+- [X] **[P0]** **Character/token-level highlight inside the value:** show exactly what differs (e.g. only `41,326` vs `40,326`, or the differing word in a company name). Use `difflib.SequenceMatcher` on case-folded tokens, falling back to a whole-value highlight when the values are entirely different.
+- [X] **[P0]** Show the SI's expected value in a small caption or tooltip under the highlighted BL value (`SI: 40,326 KG`), because the SI panel itself is not highlighted.
+- [X] **[P0]** Never highlight formatting-only differences as defects. Optionally show a subtle dotted underline with a tooltip "Same value, different format" (**[P2]**).
+- [X] **[P0]** `NEEDS_REVIEW` fields get an amber marker on the affected side (the document that is unreadable or missing the value), not red.
+- [X] **[P0]** Alignment between the SI and BL rows is by **canonical field**, never by line number.
 
 **Other tasks**
 
-- [ ] **[P0]** Escape all text; highlights are built from spans in React (no HTML injection).
-- [ ] **[P0]** Missing document: the empty panel shows a clear placeholder ("Draft BL not attached") instead of blank space.
-- [ ] **[P1]** Synchronized scrolling in Document view; sticky panel headers.
-- [ ] **[P1]** Collapsible **Field table** (`Field | SI | BL | Status`) for a compact overview.
-- [ ] **[P1]** For PDF/scan documents: show the page image with an "Extracted text" tab that carries the highlights (image overlay is **[P2]**).
-- [ ] **[P1]** Responsive layout: stack the panels on narrow screens.
-- [ ] **[P1]** Keyboard shortcuts: `n`/`p` for next/previous mismatch email.
+- [X] **[P0]** Escape all text; highlights are built from spans in React (no HTML injection).
+- [X] **[P0]** Missing document: the empty panel shows a clear placeholder ("Draft BL not attached") instead of blank space.
+- [X] **[P1]** Synchronized scrolling in Document view; sticky panel headers.
+- [X] **[P1]** Collapsible **Field table** (`Field | SI | BL | Status`) for a compact overview.
+- [X] **[P1]** For PDF/scan documents: show the page image with an "Extracted text" tab that carries the highlights (image overlay is **[P2]**).
+- [X] **[P1]** Responsive layout: stack the panels on narrow screens.
+- [X] **[P1]** Keyboard shortcuts: `n`/`p` for next/previous mismatch email.
 
 **Deliverables:** the BL_COMPARISON tab with red/amber/plain cards and a working side-by-side detail page.
 
@@ -660,17 +660,17 @@ Two views, switchable:
 
 ### 9.1 "Send email" (Gmail draft) for confirmed mismatches
 
-- [ ] **[P0]** Show a **Send email** button on `MISMATCH` emails whose fields are all confident.
-- [ ] **[P0]** Build a Gmail compose URL in the frontend from data already loaded (no file reads at click time):
+- [X] **[P0]** Show a **Send email** button on `MISMATCH` emails whose fields are all confident.
+- [X] **[P0]** Build a Gmail compose URL in the frontend from data already loaded (no file reads at click time):
   - `to` = the email's `from` field (from `inbox/email_XXX.json`);
   - `su` = `Re: ` + original subject;
   - `body` = the fixed template shown below, listing each mismatch as `- Field: SI says "…", draft BL says "…"`.
-- [ ] **[P0]** Use `URLSearchParams` for encoding; open in a new tab. **Nothing is sent automatically.**
-- [ ] **[P0]** Fallbacks: a `mailto:` link and a **Copy text** button. Keep the URL under about 2,000 characters (truncate long values, add "see attached comparison").
-- [ ] **[P1]** Message text is generated from the mismatch table by code, never by the LLM, so it always matches the highlighted rows.
-- [ ] **[P1]** **Request missing document** button for `NEEDS_REVIEW / missing_attachment`: a short draft asking for the missing SI or draft BL.
-- [ ] **[P1]** Let the user edit the recipient in Gmail (the dataset's sender names and addresses do not always agree; that is a synthetic-data quirk).
-- [ ] **[P2]** Local "Follow-up drafted" marker per email so the reviewer can track what was contacted.
+- [X] **[P0]** Use `URLSearchParams` for encoding; open in a new tab. **Nothing is sent automatically.**
+- [X] **[P0]** Fallbacks: a `mailto:` link and a **Copy text** button. Keep the URL under about 2,000 characters (truncate long values, add "see attached comparison").
+- [X] **[P1]** Message text is generated from the mismatch table by code, never by the LLM, so it always matches the highlighted rows.
+- [X] **[P1]** **Request missing document** button for `NEEDS_REVIEW / missing_attachment`: a short draft asking for the missing SI or draft BL.
+- [X] **[P1]** Let the user edit the recipient in Gmail (the dataset's sender names and addresses do not always agree; that is a synthetic-data quirk).
+- [X] **[P2]** Local "Follow-up drafted" marker per email so the reviewer can track what was contacted.
 
 Template sketch:
 
@@ -693,13 +693,13 @@ Thank you.
 
 The brief requires that when a document is unreadable or a value is missing, a person can confirm or correct it and the report updates. Keep it small: reviewers correct the *extracted value*, never the attachment.
 
-- [ ] **[P0]** **Review queue page** listing all `NEEDS_REVIEW` emails with their reason, sorted by reason.
-- [ ] **[P0]** Review panel shows: the reason, the affected document and field, the **source evidence** (the raw lines from the canonical text or the page image), what the system read, and an input to type or confirm the correct value.
-- [ ] **[P0]** `POST /api/emails/{id}/review` stores an **override** `{field, doc_role, value, reviewer, timestamp, note}`; the comparison for that email re-runs using the override; the card updates and shows **"Confirmed by reviewer"**.
-- [ ] **[P0]** Original extraction and the override are both kept and visible (audit trail).
-- [ ] **[P1]** Reviewer can choose **"Cannot determine"** (stays in review with a note) or **"Unreadable"** (keeps `NEEDS_REVIEW`, reason `unreadable`).
-- [ ] **[P1]** Reviewer can attach the missing value for `missing_value` cases and the system recomputes.
-- [ ] **[P1]** Re-run only the affected email, not the whole pipeline.
+- [X] **[P0]** **Review queue page** listing all `NEEDS_REVIEW` emails with their reason, sorted by reason.
+- [X] **[P0]** Review panel shows: the reason, the affected document and field, the **source evidence** (the raw lines from the canonical text or the page image), what the system read, and an input to type or confirm the correct value.
+- [X] **[P0]** `POST /api/emails/{id}/review` stores an **override** `{field, doc_role, value, reviewer, timestamp, note}`; the comparison for that email re-runs using the override; the card updates and shows **"Confirmed by reviewer"**.
+- [X] **[P0]** Original extraction and the override are both kept and visible (audit trail).
+- [X] **[P1]** Reviewer can choose **"Cannot determine"** (stays in review with a note) or **"Unreadable"** (keeps `NEEDS_REVIEW`, reason `unreadable`).
+- [X] **[P1]** Reviewer can attach the missing value for `missing_value` cases and the system recomputes.
+- [X] **[P1]** Re-run only the affected email, not the whole pipeline.
 
 **Deliverables:** working Gmail draft button; review queue with save-and-recompute.
 
@@ -720,12 +720,12 @@ The brief requires that when a document is unreadable or a value is missing, a p
 
 **Tasks**
 
-- [ ] **[P0]** All four sections render as filtered lists using the same `EmailList` and `EmailDetail` components.
-- [ ] **[P0]** A **Change category** control on every email (dropdown) that stores a human override. The export uses the human category when present.
-- [ ] **[P0]** Spam safety: links never clickable, no external images or scripts loaded.
-- [ ] **[P1]** Confidence chip ("Uncertain") for low-confidence classifications, with a filter to review them.
-- [ ] **[P1]** Body-parsed SI table for `SI_REQUEST` (reuse the Phase 6 label parser on the body text).
-- [ ] **[P1]** Per-section empty states and counts in the sidebar.
+- [X] **[P0]** All four sections render as filtered lists using the same `EmailList` and `EmailDetail` components.
+- [X] **[P0]** A **Change category** control on every email (dropdown) that stores a human override. The export uses the human category when present.
+- [X] **[P0]** Spam safety: links never clickable, no external images or scripts loaded.
+- [X] **[P1]** Confidence chip ("Uncertain") for low-confidence classifications, with a filter to review them.
+- [X] **[P1]** Body-parsed SI table for `SI_REQUEST` (reuse the Phase 6 label parser on the body text).
+- [X] **[P1]** Per-section empty states and counts in the sidebar.
 
 **Notes:** many `GENERAL` bodies say "attached" but no file exists; do not show an attachment area for them.
 

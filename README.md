@@ -99,6 +99,12 @@ Open a `BL_COMPARISON` email in the dashboard to see its persisted verdict, seve
 
 The sidebar supports `Mismatch`, `Needs review`, and `OK` subfilters. The detail view has an aligned comparison view and a canonical document view, which shows the full converted SI and BL text while highlighting only differing BL values. Attachments remain downloadable as immutable originals.
 
+## Phase 9: actions and human review
+
+Confirmed mismatch emails expose a **Send email** action that opens a pre-filled Gmail draft using the sender, original subject, and the persisted mismatch rows. It uses encoded query parameters, never sends automatically, limits the compose URL to roughly 2,000 characters, and offers mail-client and copy-text fallbacks. A `missing_attachment` review case instead exposes a short missing-document request draft.
+
+The **Review queue** lists unresolved comparisons by reason. In a review panel, a reviewer can inspect immutable extraction evidence, confirm or replace an SI/BL field, or record `Cannot determine` / `Unreadable` with a note. `POST /api/emails/{id}/review` appends a review record and recomputes only that email from overlay values; it never changes the original extraction or source attachment. `GET /api/review-queue` and `GET /api/emails/{id}/review-context` support the queue and source-evidence UI. The comparison page retains a visible audit trail with the original extracted value and every reviewer decision.
+
 ## Dataset policy
 
 `data/` contains the participant bundle (`inbox/`, `attachments/`, and `sample_submission.json`). It is input-only: never edit, regenerate, or tune against it. Derived output belongs under `backend/derived/`, which is ignored by Git.

@@ -6,9 +6,15 @@ export interface EmailSummary {
   subject: string;
   body_snippet: string;
   category: string;
+  detected_category?: string;
+  category_override?: string | null;
   category_conf: number | null;
   decided_by: "rule" | "llm" | null;
   status: Status;
+  review_reason: string | null;
+  defect_fields: string[];
+  reviewer_confirmed: boolean;
+  display_meta: { route?: string | null; reference?: string | null; missing_fields?: string[]; invoice_number?: string | null; topic?: string; notice_type?: string; summary?: string; why_flagged?: string[] };
   attachment_count: number;
   formats: string[];
 }
@@ -19,6 +25,8 @@ export interface EmailRecord {
   subject: string;
   body: string;
   category: string;
+  detected_category?: string;
+  category_override?: string | null;
   category_conf?: number | null;
   category_reasons?: string | null;
   decided_by?: "rule" | "llm" | null;
@@ -84,6 +92,56 @@ export interface FieldComparison {
   diff_kind: "equal" | "format_only" | "value";
   confidence: number;
   severity?: "high";
+  si_reviewed?: boolean;
+  bl_reviewed?: boolean;
+  si_original_raw?: string | null;
+  bl_original_raw?: string | null;
+  bl_diff_segments?: Array<{ text: string; changed: boolean }>;
+  review_side?: "SI" | "BL" | "BOTH" | null;
+}
+
+export interface ReviewRecord {
+  id: number;
+  doc_role: "SI" | "BL";
+  field: string;
+  value: string | null;
+  reviewer: string;
+  note: string;
+  disposition: "confirmed" | "cannot_determine" | "unreadable";
+  created_at: string;
+}
+
+export interface ReviewContext {
+  doc_id: string;
+  doc_role: "SI" | "BL";
+  convert_status: string;
+  text_path: string | null;
+  field: string | null;
+  raw: string | null;
+  normalized: string | null;
+  line_no: number | null;
+  confidence: number | null;
+  status: string | null;
+  source_text_url: string | null;
+  source_page_url: string | null;
+}
+
+export interface ReviewQueueItem {
+  email_id: string;
+  from_addr: string;
+  subject: string;
+  status: "NEEDS_REVIEW";
+  review_reason: Comparison["review_reason"];
+  field_results: FieldComparison[];
+  computed_at: string;
+}
+
+export interface BodyField {
+  field: string;
+  raw: string | null;
+  normalized: string | null;
+  line_no: number | null;
+  status: string;
 }
 
 export interface Comparison {
@@ -94,6 +152,7 @@ export interface Comparison {
   defect_fields: string[];
   field_results: FieldComparison[];
   explanations: string[];
+  reviews: ReviewRecord[];
 }
 
 async function request<T>(path: string): Promise<{ data: T; response: Response }> {
@@ -104,15 +163,22 @@ async function request<T>(path: string): Promise<{ data: T; response: Response }
   return { data: (await response.json()) as T, response };
 }
 
+async function write<T>(path: string, payload: unknown): Promise<T> {
+  const response = await fetch(path, { method: "POST", headers: { Accept: "application/json", "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+  if (!response.ok) throw new Error(`Request failed (${response.status})`);
+  return response.json() as Promise<T>;
+}
+
 export const api = {
   async counts(): Promise<EmailCounts> {
     return (await request<EmailCounts>("/api/emails/counts")).data;
   },
-  async emails(options: { category?: string; status?: Exclude<Status, null>; sort?: "mismatch_first"; query?: string; page: number; pageSize: number }): Promise<EmailListResult> {
+  async emails(options: { category?: string; status?: Exclude<Status, null>; sort?: "mismatch_first"; uncertain?: boolean; query?: string; page: number; pageSize: number }): Promise<EmailListResult> {
     const parameters = new URLSearchParams({ page: String(options.page), page_size: String(options.pageSize) });
     if (options.category) parameters.set("category", options.category);
     if (options.status) parameters.set("status", options.status);
     if (options.sort) parameters.set("sort", options.sort);
+    if (options.uncertain) parameters.set("uncertain", "1");
     if (options.query) parameters.set("q", options.query);
     const { data, response } = await request<EmailSummary[]>(`/api/emails?${parameters}`);
     return { emails: data, total: Number(response.headers.get("X-Total-Count") ?? data.length) };
@@ -133,5 +199,20 @@ export const api = {
     const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}/text`, { headers: { Accept: "text/plain" } });
     if (!response.ok) throw new Error(`Request failed (${response.status})`);
     return response.text();
+  },
+  async reviewQueue(): Promise<ReviewQueueItem[]> {
+    return (await request<ReviewQueueItem[]>("/api/review-queue")).data;
+  },
+  async reviewContext(emailId: string): Promise<ReviewContext[]> {
+    return (await request<ReviewContext[]>(`/api/emails/${encodeURIComponent(emailId)}/review-context`)).data;
+  },
+  async saveReview(emailId: string, review: { field: string; doc_role: "SI" | "BL"; value?: string; reviewer: string; note: string; disposition: "confirmed" | "cannot_determine" | "unreadable" }): Promise<Comparison> {
+    return write<Comparison>(`/api/emails/${encodeURIComponent(emailId)}/review`, review);
+  },
+  async changeCategory(emailId: string, category: string): Promise<{ email_id: string; category: string; category_override: string | null }> {
+    return write(`/api/emails/${encodeURIComponent(emailId)}/category`, { category });
+  },
+  async bodyFields(emailId: string): Promise<BodyField[]> {
+    return (await request<BodyField[]>(`/api/emails/${encodeURIComponent(emailId)}/body-fields`)).data;
   },
 };

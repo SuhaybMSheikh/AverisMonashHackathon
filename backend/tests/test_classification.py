@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import tempfile
+import json
 import unittest
 from pathlib import Path
 
@@ -10,8 +11,9 @@ from backend.app.db import database
 from backend.app.main import create_app
 from backend.app.pipeline.convert import convert_all
 from backend.app.pipeline.ingest import ingest
-from backend.app.submission import submission_rows
+from backend.app.submission import submission_rows, validate_submission
 from scripts.evaluate_classification import report
+from scripts.eval_dev import evaluate
 
 
 class ClassificationTests(unittest.TestCase):
@@ -79,6 +81,21 @@ class ClassificationTests(unittest.TestCase):
         client.post("/api/emails/email_003/category", json={"category": "SPAM"})
         self.assertEqual("SPAM", submission_rows(self.settings.database_path)["email_003"]["category"])
         client.post("/api/emails/email_003/category", json={"category": "GENERAL"})
+
+    def test_submission_rows_match_the_published_schema(self):
+        rows = submission_rows(self.settings.database_path, include_decided_by=True)
+        validate_submission(rows, PROJECT_ROOT / "data" / "sample_submission.json")
+        self.assertEqual(520, len(rows))
+
+    def test_dev_evaluator_reports_all_required_metrics(self):
+        rows = {f"email_{index:03d}": {"category": "GENERAL", "status": "OK", "defect_fields": []} for index in range(1, 41)}
+        labels = {email_id: {"category": "GENERAL", "status": "OK", "defect_fields": [], "evidence": "Reviewed message and source evidence."} for email_id in rows}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "dev_labels.json"
+            path.write_text(json.dumps(labels), encoding="utf-8")
+            result = evaluate(path, rows)
+        self.assertEqual(40, result["labels"])
+        self.assertEqual({"confusion_matrix", "per_class_f1", "macro_f1", "defect_f1", "exact_field_set_match", "end_to_end_rate", "escalation_f1", "labels"}, set(result))
 
     def test_team_dev_set_report_is_available(self):
         result = report(PROJECT_ROOT / "dev_labels" / "classification_dev_set.json", self.settings.database_path)

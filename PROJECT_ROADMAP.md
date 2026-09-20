@@ -764,7 +764,7 @@ The brief requires that when a document is unreadable or a value is missing, a p
 
 ### 12.1 Build the submission
 
-- [ ] **[P0]** `scripts/build_submission.py` writes one object keyed by `email_id`, **every** email present, matching `sample_submission.json` exactly:
+- [X] **[P0]** `scripts/build_submission.py` writes one object keyed by `email_id`, **every** email present, matching `sample_submission.json` exactly:
 
 ```json
 {
@@ -778,15 +778,15 @@ The brief requires that when a document is unreadable or a value is missing, a p
 }
 ```
 
-- [ ] **[P0]** Field rules: `has_defect` is `true` only for `MISMATCH`; `defect_fields` uses the seven canonical names; `review_reason` is one of `wrong_doc_type | missing_attachment | unreadable | missing_value` only for `NEEDS_REVIEW`, else `null`. For non-comparison categories mirror the placeholder in `sample_submission.json` (`status: "OK"`, no defects, `review_reason: null`).
-- [ ] **[P0]** Validator: same keys as the sample, correct types, all 520 ids present, no unknown fields.
-- [ ] **[P1]** Optional `decided_by` (`"rule"` or `"llm"`) per email, since the scorer tracks the rule share.
-- [ ] **[P1]** Use human overrides (Phase 9 and 10) by default; provide a flag to export the pure pipeline result.
+- [X] **[P0]** Field rules: `has_defect` is `true` only for `MISMATCH`; `defect_fields` uses the seven canonical names; `review_reason` is one of `wrong_doc_type | missing_attachment | unreadable | missing_value` only for `NEEDS_REVIEW`, else `null`. For non-comparison categories mirror the placeholder in `sample_submission.json` (`status: "OK"`, no defects, `review_reason: null`).
+- [X] **[P0]** Validator: same keys as the sample, correct types, all 520 ids present, no unknown fields.
+- [X] **[P1]** Optional `decided_by` (`"rule"` or `"llm"`) per email, since the scorer tracks the rule share.
+- [X] **[P1]** Use human overrides (Phase 9 and 10) by default; provide a flag to export the pure pipeline result.
 
 ### 12.2 Measure yourselves (no answer key)
 
 - [ ] **[P0]** **Dev set:** hand-label 40 to 60 emails, stratified across categories and all traps (each format, missing attachment, corrupt PDF, scan, subject mismatch, spam). Two people label independently on an overlap subset and reconcile. Store in `dev_labels/dev_labels.json` with a one-line evidence note per label.
-- [ ] **[P0]** `scripts/eval_dev.py` computes: category confusion matrix, per-class F1, macro-F1, defect precision/recall/F1, exact field-set match, end-to-end rate, escalation precision/recall. The formulas are in the provided `scoring.py` (weights 0.3 / 0.2 / 0.5); you may reuse that module against your own dev labels.
+- [X] **[P0]** `scripts/eval_dev.py` computes: category confusion matrix, per-class F1, macro-F1, defect precision/recall/F1, exact field-set match, end-to-end rate, escalation precision/recall. The formulas are in the provided `scoring.py` (weights 0.3 / 0.2 / 0.5); you may reuse that module against your own dev labels.
 - [ ] **[P1]** Error-analysis log: for each dev-set miss, the cause (converter, alias, normalization, classification rule, LLM) and the fix.
 
 ### 12.3 Use `/submit` responsibly

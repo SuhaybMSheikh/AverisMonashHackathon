@@ -1,0 +1,8 @@
+{
+  "email_001": {
+    "category": "BL_COMPARISON",
+    "status": "MISMATCH",
+    "defect_fields": ["consignee"],
+    "evidence": "Replace this example with a reviewer-observed source-document note."
+  }
+}

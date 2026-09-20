@@ -80,9 +80,11 @@ def ingest(settings: Settings, *, reset: bool = False) -> IngestResult:
             )
 
             for stored_path in email.get("attachments", []):
-                source_path = attachment_path(settings.data_dir, stored_path)
+                relative_path = PurePosixPath(stored_path.replace("\\", "/"))
+                source_path = (settings.data_dir / Path(*relative_path.parts)).resolve()
                 doc_id = source_path.stem
                 seen_documents.add(doc_id)
+                exists = source_path.is_file()
                 connection.execute(
                     """
                     INSERT INTO documents (doc_id, email_id, path, ext, size, sha256, role_hint)
@@ -100,10 +102,19 @@ def ingest(settings: Settings, *, reset: bool = False) -> IngestResult:
                         "email_id": email["email_id"],
                         "path": PurePosixPath(stored_path.replace("\\", "/")).as_posix(),
                         "ext": source_path.suffix.lower(),
-                        "size": source_path.stat().st_size,
-                        "sha256": sha256(source_path),
+                        "size": source_path.stat().st_size if exists else 0,
+                        "sha256": sha256(source_path) if exists else f"missing:{relative_path.as_posix()}",
                         "role_hint": role_hint(source_path),
                     },
+                )
+
+        # Every known email has an explicit lifecycle from the first ingest;
+        # later stage executions replace pending with running/ok/failed/review.
+        for email in emails:
+            for stage in ("convert", "classify", "extract", "compare"):
+                connection.execute(
+                    "INSERT OR IGNORE INTO stage_runs (email_id, stage, state) VALUES (?, ?, 'pending')",
+                    (email["email_id"], stage),
                 )
 
         existing_documents = {

@@ -95,7 +95,13 @@ class DataLayerTests(unittest.TestCase):
     def test_health_and_single_email_endpoints(self):
         health = self.client.get("/api/health")
         self.assertEqual(200, health.status_code)
-        self.assertEqual({"status": "healthy", "database": "ready", "emails": 520, "documents": 250}, health.get_json())
+        payload = health.get_json()
+        self.assertEqual("healthy", payload["status"])
+        self.assertEqual("ready", payload["database"])
+        self.assertEqual(520, payload["emails"])
+        self.assertEqual(250, payload["documents"])
+        self.assertEqual("rules_only", payload["gemini"]["mode"])
+        self.assertEqual({"failed", "pending"}, set(payload["stages"]))
 
         email = self.client.get("/api/emails/email_004")
         self.assertEqual(200, email.status_code)

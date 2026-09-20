@@ -739,18 +739,18 @@ The brief requires that when a document is unreadable or a value is missing, a p
 
 **Tasks**
 
-- [ ] **[P0]** **Stage tracking.** Each email has a per-stage state (`convert`, `classify`, `extract`, `compare`) with `pending | running | ok | failed | needs_review`, a timestamp, and an error message.
-- [ ] **[P0]** **Idempotent stages.** Rerunning a stage on unchanged input gives the same result and makes no external calls (cache by content hash).
-- [ ] **[P0]** **Runs / Failures page** in the UI: list of failed stages with the reason, a **Retry** button per email, and **Retry all failed**.
-- [ ] **[P0]** **Gemini safety net:** rate limiter (token bucket), timeouts, retry with exponential backoff (max 3), and a **fallback to rules-only** mode when quota is exhausted or the key is missing (`GEMINI_ENABLED=false`). Emails that needed the LLM and could not get it are marked `pending_llm`, not misclassified.
-- [ ] **[P0]** **Schema validation** on every LLM response; invalid output counts as a failure, not a result.
-- [ ] **[P0]** **Cache** for Gemini and OCR outputs keyed by `sha256(model + prompt_version + input)` under `derived/cache/`.
-- [ ] **[P1]** Failure modes are converted into review reasons, not exceptions: corrupt file → `unreadable`; empty attachment → `unreadable`; missing document → `missing_attachment`; placeholder value → `missing_value`; swapped or non-SI/BL document → `wrong_doc_type`.
-- [ ] **[P1]** Structured logs per email and stage (email id, stage, duration, method, outcome).
-- [ ] **[P1]** `GET /api/health` reports database status, Gemini availability/quota state, and counts of failed and pending items.
-- [ ] **[P1]** **Demo snapshot:** export all results to `results_snapshot.json` and support `DEMO_MODE=1` that serves the snapshot without any network calls.
-- [ ] **[P1]** Failure-injection tests: remove the API key, corrupt an attachment, delete an attachment, return malformed JSON from a mocked Gemini.
-- [ ] **[P2]** Process-pool for OCR/conversion to speed up a full run; incremental runs on changed hashes only.
+- [X] **[P0]** **Stage tracking.** Each email has a per-stage state (`convert`, `classify`, `extract`, `compare`) with `pending | running | ok | failed | needs_review`, a timestamp, and an error message.
+- [X] **[P0]** **Idempotent stages.** Rerunning a stage on unchanged input gives the same result and makes no external calls (cache by content hash).
+- [X] **[P0]** **Runs / Failures page** in the UI: list of failed stages with the reason, a **Retry** button per email, and **Retry all failed**.
+- [X] **[P0]** **Gemini safety net:** rate limiter (token bucket), timeouts, retry with exponential backoff (max 3), and a **fallback to rules-only** mode when quota is exhausted or the key is missing (`GEMINI_ENABLED=false`). Emails that needed the LLM and could not get it are marked `pending_llm`, not misclassified.
+- [X] **[P0]** **Schema validation** on every LLM response; invalid output counts as a failure, not a result.
+- [X] **[P0]** **Cache** for Gemini and OCR outputs keyed by `sha256(model + prompt_version + input)` under `derived/cache/`.
+- [X] **[P1]** Failure modes are converted into review reasons, not exceptions: corrupt file → `unreadable`; empty attachment → `unreadable`; missing document → `missing_attachment`; placeholder value → `missing_value`; swapped or non-SI/BL document → `wrong_doc_type`.
+- [X] **[P1]** Structured logs per email and stage (email id, stage, duration, method, outcome).
+- [X] **[P1]** `GET /api/health` reports database status, Gemini availability/quota state, and counts of failed and pending items.
+- [X] **[P1]** **Demo snapshot:** export all results to `results_snapshot.json` and support `DEMO_MODE=1` that serves the snapshot without any network calls.
+- [X] **[P1]** Failure-injection tests: remove the API key, corrupt an attachment, delete an attachment, return malformed JSON from a mocked Gemini.
+- [X] **[P2]** Process-pool for OCR/conversion to speed up a full run; incremental runs on changed hashes only.
 
 **Deliverables:** Runs page; retry flow; fallbacks; snapshot mode.
 

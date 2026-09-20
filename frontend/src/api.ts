@@ -144,6 +144,17 @@ export interface BodyField {
   status: string;
 }
 
+export interface StageRun {
+  email_id: string;
+  stage: "convert" | "classify" | "extract" | "compare";
+  state: "pending" | "running" | "ok" | "failed" | "needs_review";
+  error: string | null;
+  duration_ms: number | null;
+  updated_at: string;
+  from_addr: string;
+  subject: string;
+}
+
 export interface Comparison {
   email_id: string;
   status: Exclude<Status, null>;
@@ -214,5 +225,14 @@ export const api = {
   },
   async bodyFields(emailId: string): Promise<BodyField[]> {
     return (await request<BodyField[]>(`/api/emails/${encodeURIComponent(emailId)}/body-fields`)).data;
+  },
+  async runs(): Promise<StageRun[]> {
+    return (await request<StageRun[]>("/api/runs?failed=1")).data;
+  },
+  async retry(emailId: string): Promise<unknown> {
+    return write(`/api/emails/${encodeURIComponent(emailId)}/retry`, {});
+  },
+  async retryFailed(): Promise<{ retried: string[] }> {
+    return write<{ retried: string[] }>("/api/retry-failed", {});
   },
 };

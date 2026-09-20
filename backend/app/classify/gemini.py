@@ -22,6 +22,7 @@ _request_times: list[float] = []
 _token_events: list[tuple[float, int]] = []
 _day = ""
 _day_requests = 0
+_failures: dict[str, str] = {}
 
 
 @dataclass(frozen=True)
@@ -96,17 +97,29 @@ def _log_call(derived_dir: Path, email_id: str, *, cached: bool, latency_ms: int
         output.write(json.dumps(entry, sort_keys=True) + "\n")
 
 
+def failure_for(email_id: str) -> str | None:
+    """Reason the latest attempted call did not yield a schema-valid result."""
+    return _failures.get(email_id)
+
+
+def _failed(email_id: str, reason: str) -> None:
+    _failures[email_id] = reason
+
+
 def classify(features: EmailFeatures, derived_dir: Path) -> GeminiDecision | None:
     """Call only with explicit configuration; disabled mode never makes a request."""
+    _failures.pop(features.email_id, None)
     if os.getenv("GEMINI_ENABLED", "false").lower() != "true":
+        _failed(features.email_id, "gemini_disabled")
         return None
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
+        _failed(features.email_id, "gemini_key_missing")
         return None
     model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
     encoded = json.dumps(_payload(features), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     digest = hashlib.sha256(f"{model}:{PROMPT_VERSION}:{encoded}".encode("utf-8")).hexdigest()
-    cache_path = derived_dir / "gemini_cache" / "classification" / f"{digest}.json"
+    cache_path = derived_dir / "cache" / "gemini" / "classification" / f"{digest}.json"
     try:
         cached = _validated(json.loads(cache_path.read_text(encoding="utf-8")), cached=True)
         if cached is not None:
@@ -116,6 +129,7 @@ def classify(features: EmailFeatures, derived_dir: Path) -> GeminiDecision | Non
         pass
 
     if not _reserve_budget(max(1, len(encoded) // 4)):
+        _failed(features.email_id, "gemini_quota_exhausted")
         return None
 
     request_body = json.dumps({
@@ -131,15 +145,21 @@ def classify(features: EmailFeatures, derived_dir: Path) -> GeminiDecision | Non
             with urllib.request.urlopen(request, timeout=20) as response:  # nosec B310: fixed Google endpoint
                 payload = json.loads(response.read().decode("utf-8"))
             text = payload["candidates"][0]["content"]["parts"][0]["text"]
-            decision = _validated(json.loads(text), cached=False)
+            try:
+                decision = _validated(json.loads(text), cached=False)
+            except json.JSONDecodeError:
+                _failed(features.email_id, "gemini_invalid_schema")
+                return None
             if decision is None:
+                _failed(features.email_id, "gemini_invalid_schema")
                 return None
             cache_path.parent.mkdir(parents=True, exist_ok=True)
             cache_path.write_text(json.dumps({"category": decision.category, "confidence": decision.confidence, "reason": decision.reason}) + "\n", encoding="utf-8")
             _log_call(derived_dir, features.email_id, cached=False, latency_ms=round((time.monotonic() - started) * 1000))
             return decision
-        except (OSError, KeyError, IndexError, TypeError, ValueError, urllib.error.URLError):
+        except (OSError, KeyError, IndexError, TypeError, ValueError, urllib.error.URLError) as error:
             if attempt == 2:
+                _failed(features.email_id, "gemini_timeout" if isinstance(error, TimeoutError) else "gemini_request_failed")
                 return None
             time.sleep(2 ** attempt)
     return None

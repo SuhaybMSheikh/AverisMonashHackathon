@@ -9,35 +9,42 @@ from ..compare import compare_all
 from ..config import settings_from_env
 from ..db import database
 from ..extract.pipeline import extract_all
+from ..reliability import record_stage
 from .convert import convert_all
 from .ingest import ingest
 
 
-def _record_stage(settings, stage: str, duration_ms: int, *, conversion: bool = False) -> None:
-    """Persist a compact per-email stage outcome for the Runs/retry surface."""
+def _email_ids(settings) -> list[str]:
     with database(settings.database_path) as connection:
-        rows = connection.execute(
-            """SELECT e.email_id,
-                      MAX(CASE WHEN d.convert_status = 'failed' THEN 1 ELSE 0 END) AS has_failed_document
-               FROM emails e LEFT JOIN documents d ON d.email_id = e.email_id
-               GROUP BY e.email_id"""
-        ).fetchall()
-        for row in rows:
-            failed = conversion and bool(row["has_failed_document"])
-            connection.execute(
-                """INSERT INTO stage_runs (email_id, stage, state, error, duration_ms)
-                   VALUES (?, ?, ?, ?, ?)
-                   ON CONFLICT(email_id, stage) DO UPDATE SET
-                     state=excluded.state, error=excluded.error, duration_ms=excluded.duration_ms,
-                     updated_at=CURRENT_TIMESTAMP""",
-                (row["email_id"], stage, "failed" if failed else "ok", "document_conversion_failed" if failed else None, duration_ms),
-            )
+        return [row[0] for row in connection.execute("SELECT email_id FROM emails ORDER BY email_id")]
 
 
-def _run_stage(settings, stage: str, operation, *, conversion: bool = False):
+def _record_stage(settings, stage: str, duration_ms: int, *, conversion: bool = False, email_ids: list[str] | None = None) -> None:
+    """Persist per-email outcomes; conversion failures remain actionable."""
+    ids = email_ids or _email_ids(settings)
+    with database(settings.database_path) as connection:
+        failed_ids = {row[0] for row in connection.execute(
+            "SELECT DISTINCT email_id FROM documents WHERE convert_status = 'failed'"
+        )} if conversion else set()
+        pending_llm_ids = {row[0] for row in connection.execute(
+            "SELECT email_id FROM stage_runs WHERE stage = ? AND state = 'needs_review' AND error LIKE 'pending_llm:%'", (stage,)
+        )}
+    record_stage(settings, (email_id for email_id in ids if email_id not in failed_ids and email_id not in pending_llm_ids), stage, "ok", duration_ms=duration_ms)
+    record_stage(settings, (email_id for email_id in ids if email_id in failed_ids), stage, "failed",
+                 error="unreadable: document_conversion_failed", duration_ms=duration_ms, method="converter")
+
+
+def _run_stage(settings, stage: str, operation, *, conversion: bool = False, email_ids: list[str] | None = None):
+    ids = email_ids or _email_ids(settings)
+    record_stage(settings, ids, stage, "running")
     started = time.perf_counter()
-    result = operation()
-    _record_stage(settings, stage, round((time.perf_counter() - started) * 1000), conversion=conversion)
+    try:
+        result = operation()
+    except Exception as error:
+        record_stage(settings, ids, stage, "failed", error=f"{type(error).__name__}: {error}",
+                     duration_ms=round((time.perf_counter() - started) * 1000))
+        raise
+    _record_stage(settings, stage, round((time.perf_counter() - started) * 1000), conversion=conversion, email_ids=ids)
     return result
 
 
@@ -48,6 +55,21 @@ def run_all():
     _run_stage(settings, "classify", lambda: classify_all(settings))
     _run_stage(settings, "extract", lambda: extract_all(settings))
     return _run_stage(settings, "compare", lambda: compare_all(settings))
+
+
+def retry_email(settings, email_id: str):
+    """Retry an email from its source files, including all dependent stages."""
+    # Refresh hashes first: a reviewer may have restored a repaired attachment.
+    ingest(settings)
+    with database(settings.database_path) as connection:
+        exists = connection.execute("SELECT 1 FROM emails WHERE email_id = ?", (email_id,)).fetchone()
+        document_ids = {row[0] for row in connection.execute("SELECT doc_id FROM documents WHERE email_id = ?", (email_id,))}
+    if exists is None:
+        raise KeyError(email_id)
+    _run_stage(settings, "convert", lambda: convert_all(settings, document_ids), conversion=True, email_ids=[email_id])
+    _run_stage(settings, "classify", lambda: classify_all(settings, force=True), email_ids=[email_id])
+    _run_stage(settings, "extract", lambda: extract_all(settings, document_ids), email_ids=[email_id])
+    return _run_stage(settings, "compare", lambda: compare_all(settings), email_ids=[email_id])
 
 
 def main() -> None:

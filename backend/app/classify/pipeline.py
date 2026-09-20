@@ -41,20 +41,30 @@ def classify_all(settings: Settings, *, use_gemini: bool = False, force: bool = 
         features = build_features(email, documents_by_email.get(email["email_id"], []), settings.derived_dir)
         decision = rules.classify(features)
         decided_by = "rule"
+        pending_llm_reason = None
         if decision is None or decision.confidence < 0.75:
             llm = gemini.classify(features, settings.derived_dir) if use_gemini else None
             if llm is not None:
                 decision = rules.RuleDecision(llm.category, llm.confidence, (llm.reason,))
                 decided_by = "llm"
                 gemini_calls += not llm.cached
+            elif use_gemini:
+                pending_llm_reason = gemini.failure_for(email["email_id"]) or "pending_llm"
         if decision is None:
-            decision = rules.RuleDecision("GENERAL", 0.45, ("no_high_confidence_rule; safe_general_fallback",))
+            decision = rules.RuleDecision("GENERAL", 0.0 if pending_llm_reason else 0.45,
+                                          (("pending_llm:" + pending_llm_reason) if pending_llm_reason else "no_high_confidence_rule; safe_general_fallback",))
+        elif pending_llm_reason:
+            # Keep the deterministic suggestion visible but explicitly provisional.
+            decision = rules.RuleDecision(decision.category, decision.confidence, (*decision.reasons, f"pending_llm:{pending_llm_reason}"))
+            decided_by = "pending_llm"
         updates.append((decision.category, decision.confidence, json.dumps(decision.reasons), decided_by, email["email_id"]))
         categories[decision.category] += 1
         decisions[decided_by] += 1
 
     with database(settings.database_path) as connection:
         connection.executemany("UPDATE emails SET category = ?, category_conf = ?, category_reasons = ?, decided_by = ? WHERE email_id = ?", updates)
-        for _, _, _, _, email_id in updates:
-            connection.execute("INSERT INTO stage_runs (email_id, stage, state) VALUES (?, 'classify', 'ok') ON CONFLICT(email_id, stage) DO UPDATE SET state = 'ok', error = NULL, updated_at = CURRENT_TIMESTAMP", (email_id,))
+        for _, _, reasons, decided_by, email_id in updates:
+            state = "needs_review" if decided_by == "pending_llm" else "ok"
+            error = next((reason for reason in json.loads(reasons) if reason.startswith("pending_llm:")), None)
+            connection.execute("INSERT INTO stage_runs (email_id, stage, state, error) VALUES (?, 'classify', ?, ?) ON CONFLICT(email_id, stage) DO UPDATE SET state = excluded.state, error = excluded.error, updated_at = CURRENT_TIMESTAMP", (email_id, state, error))
     return ClassificationRun(dict(sorted(categories.items())), dict(sorted(decisions.items())), skipped, gemini_calls)

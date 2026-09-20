@@ -7,6 +7,7 @@ import hashlib
 import json
 import logging
 import os
+import os
 import re
 import shutil
 import subprocess
@@ -17,6 +18,7 @@ import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from concurrent.futures import ProcessPoolExecutor
 from typing import Any, Iterable
 
 import pymupdf
@@ -414,7 +416,7 @@ def _gemini_read(page_paths: list[Path], derived_dir: Path) -> tuple[dict[str, A
         return None, "gemini_key_missing"
     model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
     digest = hashlib.sha256((model + GEMINI_PROMPT_VERSION).encode("utf-8") + b"".join(page.read_bytes() for page in page_paths)).hexdigest()
-    cache_path = derived_dir / "gemini_cache" / f"{digest}.json"
+    cache_path = derived_dir / "cache" / "gemini" / "ocr" / f"{digest}.json"
     if cache_path.is_file():
         return json.loads(cache_path.read_text(encoding="utf-8")), None
     global _gemini_last_request
@@ -486,7 +488,12 @@ def _metadata(document: dict[str, Any], role: str, evidence: list[str], status: 
 
 def convert_document(settings: Settings, document: dict[str, Any]) -> Conversion:
     """Convert one input file. Expected input failures always produce failed metadata."""
-    source = attachment_path(settings.data_dir, document["path"])
+    try:
+        source = attachment_path(settings.data_dir, document["path"])
+    except FileNotFoundError:
+        role = document.get("role_hint") or "SI"
+        missing = {**document, "source_mtime": 0}
+        return Conversion(document["doc_id"], "", _metadata(missing, role, ["attachment_missing"], "failed", "unknown", ["missing_attachment"], None, 0.0))
     document = {**document, "source_mtime": source.stat().st_mtime}
     extension = document["ext"].lower()
     try:
@@ -544,13 +551,32 @@ def _write_conversion(settings: Settings, conversion: Conversion) -> tuple[str, 
 
 
 def convert_all(settings: Settings, document_ids: set[str] | None = None) -> list[Conversion]:
-    """Convert every indexed attachment and record only derived paths/statuses in SQLite."""
+    """Convert changed attachments only; optional worker processes speed a full run."""
     initialize(settings.database_path)
     with database(settings.database_path) as connection:
         rows = [dict(row) for row in connection.execute("SELECT * FROM documents ORDER BY doc_id")]
     if document_ids is not None:
         rows = [row for row in rows if row["doc_id"] in document_ids]
-    results = [convert_document(settings, row) for row in rows]
+    pending: list[dict] = []
+    cached: list[Conversion] = []
+    for row in rows:
+        meta_path = settings.derived_dir / (row.get("meta_path") or "")
+        text_path = settings.derived_dir / (row.get("text_path") or "")
+        try:
+            metadata = json.loads(meta_path.read_text(encoding="utf-8"))
+            if metadata.get("source_sha256") == row["sha256"] and text_path.is_file():
+                cached.append(Conversion(row["doc_id"], text_path.read_text(encoding="utf-8"), metadata))
+                continue
+        except (OSError, json.JSONDecodeError):
+            pass
+        pending.append(row)
+    workers = max(1, int(os.getenv("CONVERT_WORKERS", "1")))
+    if workers > 1 and len(pending) > 1:
+        with ProcessPoolExecutor(max_workers=min(workers, len(pending))) as pool:
+            fresh = list(pool.map(_convert_worker, [(settings, row) for row in pending]))
+    else:
+        fresh = [convert_document(settings, row) for row in pending]
+    results = [*cached, *fresh]
     with database(settings.database_path) as connection:
         for result in results:
             text_path, meta_path = _write_conversion(settings, result)
@@ -559,6 +585,12 @@ def convert_all(settings: Settings, document_ids: set[str] | None = None) -> lis
                 (result.metadata["role"], result.metadata["status"], result.metadata["method"], text_path, meta_path, result.doc_id),
             )
     return results
+
+
+def _convert_worker(item: tuple[Settings, dict[str, Any]]) -> Conversion:
+    """Pickle-friendly top-level worker for Windows process pools."""
+    settings, document = item
+    return convert_document(settings, document)
 
 
 def summary(results: Iterable[Conversion]) -> dict[str, dict[str, int]]:

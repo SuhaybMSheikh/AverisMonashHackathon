@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import mimetypes
 import json
+import os
 import re
 import sqlite3
+from pathlib import Path
 from flask import Flask, abort, jsonify, request, send_file
 
 from .config import Settings, settings_from_env
@@ -12,6 +14,8 @@ from .db import database, initialize
 from .extract.aliases import FIELDS
 from .extract.pipeline import extract_text
 from .pipeline.ingest import attachment_path, ingest
+from .pipeline.runner import retry_email
+from .reliability import export_snapshot, restore_snapshot, stage_rows
 from .preview import preview_document, rendered_pdf_page
 
 
@@ -100,7 +104,16 @@ def create_app(overrides: dict | None = None) -> Flask:
     app = Flask(__name__)
     settings = settings_from_env(overrides)
     app.config["SETTINGS"] = settings
-    _ensure_index(settings)
+    demo_mode = os.getenv("DEMO_MODE", "0") == "1"
+    if demo_mode:
+        snapshot_path = Path(os.getenv("RESULTS_SNAPSHOT", settings.derived_dir / "results_snapshot.json"))
+        if not snapshot_path.is_absolute():
+            snapshot_path = (settings.derived_dir / snapshot_path).resolve()
+        if not snapshot_path.is_file():
+            raise RuntimeError(f"DEMO_MODE requires results snapshot: {snapshot_path}")
+        restore_snapshot(settings, snapshot_path)
+    else:
+        _ensure_index(settings)
 
     @app.errorhandler(404)
     def not_found(error):
@@ -112,11 +125,46 @@ def create_app(overrides: dict | None = None) -> Flask:
             with database(settings.database_path) as connection:
                 emails = connection.execute("SELECT COUNT(*) FROM emails").fetchone()[0]
                 documents = connection.execute("SELECT COUNT(*) FROM documents").fetchone()[0]
+                failed = connection.execute("SELECT COUNT(*) FROM stage_runs WHERE state = 'failed'").fetchone()[0]
+                pending = connection.execute("SELECT COUNT(*) FROM stage_runs WHERE state IN ('pending', 'running', 'needs_review')").fetchone()[0]
             return jsonify(
-                {"status": "healthy", "database": "ready", "emails": emails, "documents": documents}
+                {"status": "healthy", "database": "ready", "emails": emails, "documents": documents,
+                 "gemini": {"enabled": os.getenv("GEMINI_ENABLED", "false").lower() == "true",
+                            "key_available": bool(os.getenv("GEMINI_API_KEY")),
+                            "mode": "demo" if demo_mode else "rules_only" if os.getenv("GEMINI_ENABLED", "false").lower() != "true" else "enabled"},
+                 "stages": {"failed": failed, "pending": pending}, "demo_mode": demo_mode}
             )
         except sqlite3.Error:
             return jsonify({"status": "unhealthy", "database": "unavailable"}), 500
+
+    @app.route("/api/runs", methods=["GET"])
+    def runs():
+        return jsonify(stage_rows(settings, failed_only=request.args.get("failed") == "1"))
+
+    @app.route("/api/emails/<email_id>/retry", methods=["POST"])
+    def retry_one(email_id: str):
+        if demo_mode:
+            abort(403, description="retries are disabled in demo mode")
+        try:
+            retry_email(settings, email_id)
+        except KeyError:
+            abort(404)
+        return jsonify({"email_id": email_id, "retried": True, "runs": [row for row in stage_rows(settings) if row["email_id"] == email_id]})
+
+    @app.route("/api/retry-failed", methods=["POST"])
+    def retry_failed():
+        if demo_mode:
+            abort(403, description="retries are disabled in demo mode")
+        ids = sorted({row["email_id"] for row in stage_rows(settings, failed_only=True)})
+        for email_id in ids:
+            retry_email(settings, email_id)
+        return jsonify({"retried": ids})
+
+    @app.route("/api/snapshot", methods=["POST"])
+    def snapshot():
+        if demo_mode:
+            abort(403, description="snapshot is already active")
+        return jsonify({"path": str(export_snapshot(settings).resolve())})
 
     @app.route("/api/emails/counts", methods=["GET"])
     def email_counts():

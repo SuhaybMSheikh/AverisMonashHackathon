@@ -151,7 +151,7 @@ def compare_email(settings, email_id: str) -> dict:
         status = "OK"
     elif forced_unreadable:
         status, reason = "NEEDS_REVIEW", "unreadable"
-    elif len(si) != 1 or len(bl) != 1:
+    elif len(si) != 1 or len(bl) != 1 or any(str(doc.get("sha256", "")).startswith("missing:") for doc in (*si, *bl)):
         status, reason = "NEEDS_REVIEW", "missing_attachment"
     elif any(doc["convert_status"] == "failed" for doc in (*si, *bl)):
         status, reason = "NEEDS_REVIEW", "unreadable"

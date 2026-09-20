@@ -1,6 +1,6 @@
 import { FormEvent, KeyboardEvent, RefObject, UIEventHandler, useEffect, useMemo, useRef, useState } from "react";
 
-import { api, BodyField, Comparison, DocumentPreview, DocumentSummary, EmailCounts, EmailRecord, EmailSummary, FieldComparison, ReviewContext, ReviewQueueItem, Status } from "./api";
+import { api, BodyField, Comparison, DocumentPreview, DocumentSummary, EmailCounts, EmailRecord, EmailSummary, FieldComparison, ReviewContext, ReviewQueueItem, StageRun, Status } from "./api";
 
 const PAGE_SIZE = 50;
 const categoryLabels: Array<[string, string]> = [
@@ -11,12 +11,13 @@ const categoryLabels: Array<[string, string]> = [
   ["SPAM", "Spam"],
 ];
 
-type Route = { kind: "inbox"; category?: string; status?: Exclude<Status, null>; uncertain?: boolean } | { kind: "email"; emailId: string } | { kind: "review" };
+type Route = { kind: "inbox"; category?: string; status?: Exclude<Status, null>; uncertain?: boolean } | { kind: "email"; emailId: string } | { kind: "review" } | { kind: "runs" };
 type LoadState<T> = { data: T | null; loading: boolean; error: string | null };
 
 function routeFromLocation(): Route {
   const segments = window.location.pathname.split("/").filter(Boolean);
   if (segments[0] === "review") return { kind: "review" };
+  if (segments[0] === "runs") return { kind: "runs" };
   if (segments[0] === "uncertain") return { kind: "inbox", uncertain: true };
   if (segments[0] === "email" && segments[1]) return { kind: "email", emailId: decodeURIComponent(segments[1]) };
   if (segments[0] === "category" && segments[1]) {
@@ -186,6 +187,9 @@ export function App() {
           <button className={`nav-item ${route.kind === "review" ? "selected" : ""}`} onClick={() => { setPage(1); navigate("/review"); }}>
             <span>Review queue</span><strong>{counts.data?.statuses.NEEDS_REVIEW ?? "—"}</strong>
           </button>
+          <button className={`nav-item ${route.kind === "runs" ? "selected" : ""}`} onClick={() => { setPage(1); navigate("/runs"); }}>
+            <span>Runs & failures</span><strong>↻</strong>
+          </button>
           {categoryLabels.map(([value, label]) => (
             <div key={value}>
               <button className={`nav-item ${selectedCategory === value && !selectedStatus ? "selected" : ""}`} onClick={() => { setPage(1); navigate(`/category/${value}`); }}>
@@ -208,7 +212,7 @@ export function App() {
       </aside>
 
       <section className="email-list-panel" aria-label="Email list">
-        {route.kind === "review" ? <ReviewQueue onSelect={(emailId) => navigate(`/email/${encodeURIComponent(emailId)}`)} /> : <>
+        {route.kind === "review" ? <ReviewQueue onSelect={(emailId) => navigate(`/email/${encodeURIComponent(emailId)}`)} /> : route.kind === "runs" ? <RunsPage onSelect={(emailId) => navigate(`/email/${encodeURIComponent(emailId)}`)} onChanged={() => setRefresh((value) => value + 1)} /> : <>
         <div className="list-header">
           <div><p className="eyebrow">Inbox</p><h2>{heading}</h2></div>
           <span className="count-label">{list.data?.total ?? "—"}</span>
@@ -283,6 +287,16 @@ function ReviewQueue({ onSelect }: { onSelect: (emailId: string) => void }) {
   const [queue, setQueue] = useState<LoadState<ReviewQueueItem[]>>({ data: null, loading: true, error: null });
   useEffect(() => { let cancelled = false; api.reviewQueue().then((data) => !cancelled && setQueue({ data, loading: false, error: null }), (error: Error) => !cancelled && setQueue({ data: null, loading: false, error: error.message })); return () => { cancelled = true; }; }, []);
   return <><div className="list-header"><div><p className="eyebrow">Human review</p><h2>Review queue</h2></div><span className="count-label">{queue.data?.length ?? "—"}</span></div><p className="queue-note">Unresolved cases, grouped by their recorded reason.</p><PanelState label="review queue" state={queue} /><div className="email-scroll" role="list">{queue.data?.map((item) => <button className="email-card card-needs_review" key={item.email_id} onClick={() => onSelect(item.email_id)}><div className="card-topline"><span className="sender">{item.from_addr}</span><span className="status-badge compact status-needs_review">{item.review_reason?.replaceAll("_", " ")}</span></div><strong className="subject">{item.subject || "(no subject)"}</strong><p className="snippet">{item.field_results.filter((field) => !field.equal).map((field) => fieldLabels[field.field]).join(", ") || "Inspect source evidence"}</p></button>)}</div>{queue.data?.length === 0 && <p className="panel-state">No emails need review.</p>}</>;
+}
+
+function RunsPage({ onSelect, onChanged }: { onSelect: (emailId: string) => void; onChanged: () => void }) {
+  const [runs, setRuns] = useState<LoadState<StageRun[]>>({ data: null, loading: true, error: null });
+  const [retrying, setRetrying] = useState<string | null>(null);
+  const load = () => { setRuns({ data: null, loading: true, error: null }); api.runs().then((data) => setRuns({ data, loading: false, error: null }), (error: Error) => setRuns({ data: null, loading: false, error: error.message })); };
+  useEffect(() => { load(); }, []);
+  const retry = async (emailId: string) => { setRetrying(emailId); try { await api.retry(emailId); load(); onChanged(); } finally { setRetrying(null); } };
+  const retryAll = async () => { setRetrying("all"); try { await api.retryFailed(); load(); onChanged(); } finally { setRetrying(null); } };
+  return <><div className="list-header"><div><p className="eyebrow">Reliability</p><h2>Runs & failures</h2></div><button disabled={!runs.data?.length || retrying !== null} onClick={() => void retryAll()}>Retry all failed</button></div><p className="queue-note">Failures and unresolved model decisions are preserved with their stage and reason.</p><PanelState label="runs" state={runs} /><div className="email-scroll" role="list">{runs.data?.map((run) => <article className="run-card" key={`${run.email_id}-${run.stage}`}><div><strong>{run.stage}</strong><span className={`status-badge compact status-${run.state === "failed" ? "needs_review" : "pending"}`}>{run.state.replaceAll("_", " ")}</span><p>{run.subject || "(no subject)"}</p><small>{run.email_id} · {run.error ?? "No error detail"}</small></div><div><button onClick={() => onSelect(run.email_id)}>Open</button><button disabled={retrying !== null} onClick={() => void retry(run.email_id)}>{retrying === run.email_id ? "Retrying…" : "Retry"}</button></div></article>)}</div>{runs.data?.length === 0 && <p className="panel-state">No failed or pending stages.</p>}</>;
 }
 
 function EmailDetail({ email, documents, onClose, onReviewSaved, onCategoryChanged }: { email: EmailRecord; documents: DocumentSummary[]; onClose: () => void; onReviewSaved: () => void; onCategoryChanged: () => void }) {

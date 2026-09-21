@@ -1,0 +1,46 @@
+# Cloud Build source context. Keep only the frozen demo data needed at runtime.
+.gcloudignore
+.git/
+
+# Secrets and local environments.
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+env/
+
+# Local dependency and tool output.
+node_modules/
+frontend/node_modules/
+frontend/dist/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Do not upload generated state other than the immutable demo snapshot and text.
+backend/derived/cache/
+backend/derived/logs/
+backend/derived/meta/
+backend/derived/pages/
+backend/derived/*.sqlite3
+backend/derived/*.sqlite
+backend/derived/gemini_log.jsonl
+backend/derived/extraction_coverage.json
+backend/derived/unknown_labels.json
+
+# Non-runtime artifacts.
+dev_labels/
+docs/recordings/
+docs/**/*.mp4
+docs/**/*.mov
+docs/**/*.webm
+submission.json
+
+# Fair-play material is never uploaded to Cloud Build.
+ground_truth.json
+**/ground_truth.json
+data_v2/
+**/*generator*

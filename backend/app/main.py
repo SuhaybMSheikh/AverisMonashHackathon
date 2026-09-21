@@ -7,7 +7,7 @@ import os
 import re
 import sqlite3
 from pathlib import Path
-from flask import Flask, abort, jsonify, request, send_file
+from flask import Flask, abort, jsonify, request, send_file, send_from_directory
 
 from .config import Settings, settings_from_env
 from .db import database, initialize
@@ -101,14 +101,19 @@ def _canonical_text(settings: Settings, stored_path: str | None) -> str | None:
 
 
 def create_app(overrides: dict | None = None) -> Flask:
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder=None)
     settings = settings_from_env(overrides)
     app.config["SETTINGS"] = settings
+    frontend_dist = Path(
+        os.getenv("FRONTEND_DIST", Path(__file__).resolve().parents[2] / "frontend" / "dist")
+    ).resolve()
     demo_mode = os.getenv("DEMO_MODE", "0") == "1"
     if demo_mode:
-        snapshot_path = Path(os.getenv("RESULTS_SNAPSHOT", settings.derived_dir / "results_snapshot.json"))
+        configured_snapshot = os.getenv("RESULTS_SNAPSHOT")
+        snapshot_path = Path(configured_snapshot) if configured_snapshot else settings.derived_dir / "results_snapshot.json"
         if not snapshot_path.is_absolute():
-            snapshot_path = (settings.derived_dir / snapshot_path).resolve()
+            project_snapshot = (Path(__file__).resolve().parents[2] / snapshot_path).resolve()
+            snapshot_path = project_snapshot if project_snapshot.is_file() else (settings.derived_dir / snapshot_path).resolve()
         if not snapshot_path.is_file():
             raise RuntimeError(f"DEMO_MODE requires results snapshot: {snapshot_path}")
         restore_snapshot(settings, snapshot_path)
@@ -488,6 +493,19 @@ def create_app(overrides: dict | None = None) -> Flask:
         if image_path is None:
             abort(404)
         return send_file(image_path, mimetype="image/png", conditional=True)
+
+    @app.route("/", defaults={"asset_path": ""})
+    @app.route("/<path:asset_path>")
+    def frontend(asset_path: str):
+        """Serve the Vite bundle and let its client router own non-API routes."""
+        if asset_path.startswith("api/"):
+            abort(404)
+        candidate = frontend_dist / asset_path
+        if asset_path and candidate.is_file():
+            return send_from_directory(frontend_dist, asset_path)
+        if (frontend_dist / "index.html").is_file():
+            return send_from_directory(frontend_dist, "index.html")
+        abort(404, description="frontend bundle is unavailable")
 
     return app
 

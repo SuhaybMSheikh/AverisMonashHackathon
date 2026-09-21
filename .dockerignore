@@ -1,0 +1,38 @@
+# Secrets and local environments must never enter a build context.
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+env/
+
+# Local dependency and tool output.
+node_modules/
+frontend/node_modules/
+frontend/dist/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.git/
+
+# All derived data is reconstructed inside the image.  Excluding the whole
+# directory prevents local databases, caches, and snapshots from changing a
+# Docker build context.
+backend/derived/
+
+# Labels, reports, recordings, and local submission artefacts are not runtime inputs.
+dev_labels/
+docs/recordings/
+docs/**/*.mp4
+docs/**/*.mov
+docs/**/*.webm
+submission.json
+results_snapshot.json
+
+# Fair-play material is never part of the image.
+ground_truth.json
+**/ground_truth.json
+data_v2/
+**/*generator*

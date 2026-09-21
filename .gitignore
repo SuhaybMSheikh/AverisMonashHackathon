@@ -6,6 +6,7 @@
 # Generated project artifacts
 backend/derived/
 derived/
+results_snapshot.json
 *.db
 *.sqlite
 *.sqlite3

@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: averis-shipping-demo
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: false
+    envVars:
+      - key: DEMO_MODE
+        value: "1"
+      - key: GEMINI_ENABLED
+        value: "false"
+      - key: RESULTS_SNAPSHOT
+        value: results_snapshot.json

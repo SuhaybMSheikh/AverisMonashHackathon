@@ -51,7 +51,9 @@ def _unreadable(document: dict[str, Any], error: Exception) -> dict[str, Any]:
         **_base(document),
         "error": "unreadable",
         "detail": detail or "The file could not be read.",
-        "metadata": {"classification": "corrupt"},
+        # Keep the API response safe for untrusted files while giving callers a
+        # stable way to distinguish a corrupt document from a cache I/O fault.
+        "metadata": {"classification": "corrupt", "error_type": type(error).__name__},
     }
 
 
@@ -169,7 +171,9 @@ def preview_document(source: Path, document: dict[str, Any], derived_dir: Path, 
 
 def rendered_pdf_page(source: Path, document: dict[str, Any], derived_dir: Path, page_number: int) -> Path | None:
     """Ensure a PDF page cache exists and return one page without trusting a URL path."""
-    preview = _pdf_preview(source, document, derived_dir)
+    # Use the public preview path so malformed PDFs have the same safe outcome
+    # whether the client requests metadata or an individual page.
+    preview = preview_document(source, document, derived_dir)
     if preview.get("error"):
         return None
     page_count = preview["metadata"]["page_count"]

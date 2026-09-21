@@ -6,6 +6,8 @@ import os
 from pathlib import Path
 from unittest.mock import patch
 
+import pymupdf
+
 from backend.app.config import PROJECT_ROOT, settings_from_env
 from backend.app.db import database
 from backend.app.main import create_app
@@ -16,6 +18,7 @@ from backend.app.compare import compare_email
 from backend.app.reliability import export_snapshot, record_stage, restore_snapshot
 from backend.app.classify import gemini
 from backend.app.classify.features import EmailFeatures
+from backend.app.precompute_demo import prepare_demo
 
 
 class ReliabilityTests(unittest.TestCase):
@@ -83,6 +86,47 @@ class ReliabilityTests(unittest.TestCase):
         extract_all(self.settings)
         comparison = compare_email(self.settings, "missing-file")
         self.assertEqual(("NEEDS_REVIEW", "missing_attachment"), (comparison["status"], comparison["review_reason"]))
+
+    def test_precompute_demo_skips_and_reports_an_invalid_pdf(self):
+        root = Path(self.temp.name) / "invalid-preview"
+        data_dir = root / "data"
+        attachment_dir = data_dir / "attachments"
+        attachment_dir.mkdir(parents=True)
+        source = attachment_dir / "broken.pdf"
+        source.write_bytes(b"not a PDF")
+        valid_source = attachment_dir / "valid.pdf"
+        pdf = pymupdf.open()
+        pdf.new_page().insert_text((72, 72), "valid preview")
+        pdf.save(valid_source)
+        pdf.close()
+        settings = settings_from_env({
+            "DATA_DIR": data_dir,
+            "DATABASE_PATH": root / "state.sqlite3",
+            "DERIVED_DIR": root / "derived",
+        })
+        from backend.app.db import initialize
+        initialize(settings.database_path)
+        with database(settings.database_path) as connection:
+            connection.execute("INSERT INTO emails (email_id, from_addr, subject, body) VALUES (?, ?, ?, ?)",
+                               ("invalid-pdf-email", "sender@example.com", "broken", ""))
+            connection.execute(
+                "INSERT INTO documents (doc_id, email_id, path, ext, size, sha256, role_hint) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ("invalid-pdf", "invalid-pdf-email", "attachments/broken.pdf", ".pdf", source.stat().st_size, "test", "BL"),
+            )
+            connection.execute("INSERT INTO emails (email_id, from_addr, subject, body) VALUES (?, ?, ?, ?)",
+                               ("valid-pdf-email", "sender@example.com", "valid", ""))
+            connection.execute(
+                "INSERT INTO documents (doc_id, email_id, path, ext, size, sha256, role_hint) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ("valid-pdf", "valid-pdf-email", "attachments/valid.pdf", ".pdf", valid_source.stat().st_size, "test", "BL"),
+            )
+
+        summary = prepare_demo(settings, run_pipeline=False, snapshot_output=root / "results_snapshot.json")
+        self.assertEqual(2, summary.documents_processed)
+        self.assertEqual(1, summary.documents_rendered)
+        self.assertEqual(1, summary.pages_rendered)
+        self.assertEqual(("invalid-pdf", "broken.pdf", "corrupt_pdf"),
+                         (summary.skipped[0].document_id, summary.skipped[0].filename, summary.skipped[0].reason))
+        self.assertIn("invalid-pdf (broken.pdf): corrupt_pdf", summary.report())
 
 
 if __name__ == "__main__":

@@ -90,7 +90,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refresh]);
 
   useEffect(() => {
     let cancelled = false;
@@ -172,7 +172,7 @@ export function App() {
         <div className="brand-row">
           <div>
             <p className="eyebrow">Averis × Monash</p>
-            <h1>Document desk</h1>
+            <h1>CargoCheck AI</h1>
           </div>
           <button className="icon-button" onClick={() => setTheme(theme === "light" ? "dark" : "light")} aria-label="Toggle colour theme">
             {theme === "light" ? "◐" : "◑"}
@@ -181,14 +181,14 @@ export function App() {
         <button className={`nav-item ${!selectedCategory && !selectedUncertain ? "selected" : ""}`} onClick={() => { setPage(1); navigate("/"); }}>
           <span>All</span><strong>{counts.data?.all ?? "—"}</strong>
         </button>
-        <button className={`nav-item ${selectedUncertain ? "selected" : ""}`} onClick={() => { setPage(1); navigate("/uncertain"); }}><span>Uncertain</span><strong>Review</strong></button>
+        <button className={`nav-item ${selectedUncertain ? "selected" : ""}`} onClick={() => { setPage(1); navigate("/uncertain"); }}><span>Uncertain</span><strong>{counts.data?.uncertain ?? "—"}</strong></button>
         <PanelState label="counts" state={counts} />
         <div className="nav-section">
           <button className={`nav-item ${route.kind === "review" ? "selected" : ""}`} onClick={() => { setPage(1); navigate("/review"); }}>
             <span>Review queue</span><strong>{counts.data?.statuses.NEEDS_REVIEW ?? "—"}</strong>
           </button>
           <button className={`nav-item ${route.kind === "runs" ? "selected" : ""}`} onClick={() => { setPage(1); navigate("/runs"); }}>
-            <span>Runs & failures</span><strong>↻</strong>
+            <span>Runs & failures</span><strong>{counts.data?.run_issues ?? "—"}</strong>
           </button>
           {categoryLabels.map(([value, label]) => (
             <div key={value}>
@@ -401,7 +401,7 @@ function ComparisonWorkspace({ email, comparison, documents, onComparisonUpdated
       <PanelState label="canonical documents" state={texts} />
       {texts.data && <DocumentComparison si={si} bl={bl} texts={texts.data} fields={orderedFields} />}
     </>}
-    <details className="field-table"><summary>Compact field table</summary><table><thead><tr><th>Field</th><th>SI</th><th>Draft BL</th><th>Status</th></tr></thead><tbody>{orderedFields.map((item) => <tr key={item.field}><th>{fieldLabels[item.field]}</th><td>{item.si_raw ?? "—"}</td><td>{item.bl_raw ?? "—"}</td><td>{item.equal ? "Match" : comparison.status === "NEEDS_REVIEW" ? "Review" : "Mismatch"}</td></tr>)}</tbody></table></details>
+    <details className="field-table"><summary>Compact field table</summary><table><colgroup><col className="field-name-column" /><col /><col /><col className="field-status-column" /></colgroup><thead><tr><th>Field</th><th>SI</th><th>Draft BL</th><th>Status</th></tr></thead><tbody>{orderedFields.map((item) => <tr key={item.field}><th>{fieldLabels[item.field]}</th><td>{item.si_raw ?? "—"}</td><td>{item.bl_raw ?? "—"}</td><td>{item.equal ? "Match" : comparison.status === "NEEDS_REVIEW" ? "Review" : "Mismatch"}</td></tr>)}</tbody></table></details>
     {comparison.status === "NEEDS_REVIEW" && <ReviewPanel emailId={email.email_id} comparison={comparison} onSaved={onComparisonUpdated} />}
     {comparison.reviews.length > 0 && <ReviewAudit reviews={comparison.reviews} fields={orderedFields} />}
   </section>;

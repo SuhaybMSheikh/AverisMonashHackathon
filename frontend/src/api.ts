@@ -73,6 +73,8 @@ export interface DocumentPreview {
 
 export interface EmailCounts {
   all: number;
+  uncertain: number;
+  run_issues: number;
   categories: Record<string, number>;
   statuses: Record<Exclude<Status, null>, number>;
 }

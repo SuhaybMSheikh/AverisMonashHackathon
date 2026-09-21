@@ -177,6 +177,10 @@ def create_app(overrides: dict | None = None) -> Flask:
         statuses = {name: 0 for name in ("OK", "MISMATCH", "NEEDS_REVIEW")}
         with database(settings.database_path) as connection:
             total = connection.execute("SELECT COUNT(*) FROM emails").fetchone()[0]
+            uncertain = connection.execute("SELECT COUNT(*) FROM emails WHERE category_conf < 0.75").fetchone()[0]
+            run_issues = connection.execute(
+                "SELECT COUNT(*) FROM stage_runs WHERE state IN ('failed', 'needs_review')"
+            ).fetchone()[0]
             for row in connection.execute("SELECT COALESCE(category_override, category) AS category, COUNT(*) AS count FROM emails GROUP BY COALESCE(category_override, category)"):
                 categories[row["category"]] = row["count"]
             for row in connection.execute(
@@ -185,7 +189,13 @@ def create_app(overrides: dict | None = None) -> Flask:
                    WHERE COALESCE(e.category_override, e.category) = 'BL_COMPARISON' AND c.status IS NOT NULL GROUP BY c.status"""
             ):
                 statuses[row["status"]] = row["count"]
-        return jsonify({"all": total, "categories": categories, "statuses": statuses})
+        return jsonify({
+            "all": total,
+            "uncertain": uncertain,
+            "run_issues": run_issues,
+            "categories": categories,
+            "statuses": statuses,
+        })
 
     @app.route("/api/emails", methods=["GET"])
     def list_emails():

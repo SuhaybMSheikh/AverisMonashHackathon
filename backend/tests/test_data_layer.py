@@ -114,6 +114,8 @@ class DataLayerTests(unittest.TestCase):
         self.assertEqual(
             {
                 "all": 520,
+                "uncertain": 0,
+                "run_issues": 0,
                 "categories": {
                     "BL_COMPARISON": 0,
                     "SI_REQUEST": 0,
